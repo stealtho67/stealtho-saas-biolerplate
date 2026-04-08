@@ -6,12 +6,19 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from './components/Layout';
+import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import BarberProfile from './pages/BarberProfile';
 import MyBookings from './pages/MyBookings';
 import Profile from './pages/Profile';
 import BarberDashboard from './pages/BarberDashboard';
+import AdminOverview from './pages/admin/Overview';
+import AdminBarbers from './pages/admin/BarberManagement';
+import AdminBookings from './pages/admin/BookingManagement';
+import AdminRevenue from './pages/admin/RevenueTracking';
+import AdminUsers from './pages/admin/UserManagement';
+import AdminReviews from './pages/admin/ReviewsModeration';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -46,8 +53,16 @@ const AuthenticatedApp = () => {
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/dashboard" element={<BarberDashboard />} />
-        <Route path="*" element={<PageNotFound />} />
       </Route>
+      <Route element={<AdminLayout />}>
+        <Route path="/admin" element={<AdminOverview />} />
+        <Route path="/admin/barbers" element={<AdminBarbers />} />
+        <Route path="/admin/bookings" element={<AdminBookings />} />
+        <Route path="/admin/revenue" element={<AdminRevenue />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/reviews" element={<AdminReviews />} />
+      </Route>
+      <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
 };
