@@ -13,6 +13,7 @@ import BarberProfile from './pages/BarberProfile';
 import MyBookings from './pages/MyBookings';
 import Profile from './pages/Profile';
 import BarberDashboard from './pages/BarberDashboard';
+import BarberApplication from './pages/BarberApplication';
 import AdminOverview from './pages/admin/Overview';
 import AdminBarbers from './pages/admin/BarberManagement';
 import AdminBookings from './pages/admin/BookingManagement';
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/dashboard" element={<BarberDashboard />} />
+        <Route path="/apply" element={<BarberApplication />} />
       </Route>
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<AdminOverview />} />

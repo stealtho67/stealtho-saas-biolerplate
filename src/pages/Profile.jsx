@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from "react-router-dom";
 import { User, Scissors, Upload, Loader2, BadgeCheck, Plus, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -169,9 +170,11 @@ export default function Profile() {
           <p className="text-sm text-muted-foreground mb-4">
             Join NextCut as a barber to get clients, manage bookings, and grow your business.
           </p>
-          <Button onClick={becomeBarber} disabled={saving} className="w-full">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Become a Barber"}
-          </Button>
+          <Link to="/apply" className="block">
+            <Button className="w-full">
+              Apply as a Barber
+            </Button>
+          </Link>
         </div>
       </div>
     );
