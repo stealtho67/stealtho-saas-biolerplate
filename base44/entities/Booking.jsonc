@@ -1,0 +1,69 @@
+{
+  "name": "Booking",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Name of the client"
+    },
+    "barber_id": {
+      "type": "string",
+      "description": "ID of the barber"
+    },
+    "barber_name": {
+      "type": "string",
+      "description": "Name of the barber"
+    },
+    "service_id": {
+      "type": "string",
+      "description": "ID of the selected service"
+    },
+    "service_name": {
+      "type": "string",
+      "description": "Name of the service booked"
+    },
+    "price": {
+      "type": "number",
+      "description": "Price of the booking"
+    },
+    "date": {
+      "type": "string",
+      "description": "Date of booking (YYYY-MM-DD)"
+    },
+    "time": {
+      "type": "string",
+      "description": "Time of booking (HH:MM)"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Duration in minutes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "completed",
+        "cancelled"
+      ],
+      "default": "confirmed",
+      "description": "Booking status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Special requests or notes from client"
+    }
+  },
+  "required": [
+    "client_email",
+    "barber_id",
+    "service_id",
+    "date",
+    "time",
+    "status"
+  ]
+}

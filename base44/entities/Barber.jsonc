@@ -1,0 +1,101 @@
+{
+  "name": "Barber",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who owns this barber profile"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Barber's display name"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Short bio about the barber"
+    },
+    "profile_photo": {
+      "type": "string",
+      "description": "URL to profile photo"
+    },
+    "portfolio_images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs of portfolio images"
+    },
+    "city": {
+      "type": "string",
+      "description": "City where barber operates"
+    },
+    "neighborhood": {
+      "type": "string",
+      "description": "Specific neighborhood or area"
+    },
+    "license_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether barber's license has been verified"
+    },
+    "license_image": {
+      "type": "string",
+      "description": "URL of uploaded license document"
+    },
+    "rating": {
+      "type": "number",
+      "default": 0,
+      "description": "Average rating"
+    },
+    "total_reviews": {
+      "type": "number",
+      "default": 0,
+      "description": "Total number of reviews"
+    },
+    "total_bookings": {
+      "type": "number",
+      "default": 0,
+      "description": "Total completed bookings"
+    },
+    "is_available_now": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether barber is currently available"
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether barber is featured on homepage"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "suspended"
+      ],
+      "default": "pending",
+      "description": "Account status"
+    },
+    "working_hours": {
+      "type": "object",
+      "description": "Working hours per day of week"
+    },
+    "years_experience": {
+      "type": "number",
+      "description": "Years of experience"
+    },
+    "specialties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Barber specialties like fades, braids, etc."
+    }
+  },
+  "required": [
+    "user_email",
+    "display_name",
+    "city"
+  ]
+}

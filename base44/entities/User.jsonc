@@ -1,0 +1,16 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "user",
+        "barber",
+        "admin"
+      ],
+      "default": "user",
+      "description": "User role - client, barber, or admin"
+    }
+  }
+}
