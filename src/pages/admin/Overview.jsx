@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { DollarSign, Calendar, Scissors, Users, TrendingUp, Star } from "lucide-react";
+import { DollarSign, Calendar, Scissors, Users, TrendingUp, Zap } from "lucide-react";
+import StripeReadiness from "@/components/admin/StripeReadiness";
+import { calcFees } from "@/lib/stripeConfig";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, ResponsiveContainer
@@ -27,50 +29,21 @@ export default function Overview() {
     const d30 = subDays(now, 30);
 
     const completed = bookings.filter(b => b.status === "completed");
-    const totalRevenue = completed.reduce((s, b) => s + (b.price || 0), 0);
-    const rev7 = completed.filter(b => isAfter(parseISO(b.date), d7)).reduce((s, b) => s + (b.price || 0), 0);
-    const rev30 = completed.filter(b => isAfter(parseISO(b.date), d30)).reduce((s, b) => s + (b.price || 0), 0);
-
-    // Daily chart (last 14 days)
-    const dailyMap = {};
-    for (let i = 13; i >= 0; i--) {
-      const d = format(subDays(now, i), "MMM d");
-      dailyMap[d] = { date: d, revenue: 0, bookings: 0 };
-    }
-    completed.forEach(b => {
-      if (b.date) {
-        const d = format(parseISO(b.date), "MMM d");
-        if (dailyMap[d]) {
-          dailyMap[d].revenue += b.price || 0;
-          dailyMap[d].bookings += 1;
-        }
-      }
-    });
-    const dailyChart = Object.values(dailyMap);
-
-    // Top barbers by revenue
-    const barberRevMap = {};
-    completed.forEach(b => {
-      if (!barberRevMap[b.barber_id]) barberRevMap[b.barber_id] = { revenue: 0, bookings: 0, name: b.barber_name };
-      barberRevMap[b.barber_id].revenue += b.price || 0;
-      barberRevMap[b.barber_id].bookings += 1;
-    });
-    const topBarbers = Object.entries(barberRevMap)
-      .map(([id, v]) => ({ id, ...v }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
+    const paid = completed.filter(b => b.payment_status === "paid");
+    const unpaid = completed.filter(b => b.payment_status !== "paid");
+    const totalRevenue = completed.reduce((s, b) => s + (b.service_price || b.price || 0), 0);
+    const totalPlatformFees = completed.reduce((s, b) => s + (b.platform_fee ?? calcFees(b.price || 0).platformFee), 0);
+    const rev7 = completed.filter(b => isAfter(parseISO(b.date), d7)).reduce((s, b) => s + (b.service_price || b.price || 0), 0);
+    const rev30 = completed.filter(b => isAfter(parseISO(b.date), d30)).reduce((s, b) => s + (b.service_price || b.price || 0), 0);
 
     setData({
       totalRevenue,
+      totalPlatformFees,
+      paidBookings: paid.length,
+      unpaidBookings: unpaid.length,
       rev7,
       rev30,
-      totalBookings: bookings.length,
-      activeBarbers: barbers.filter(b => b.status === "active").length,
-      pendingBarbers: barbers.filter(b => b.status === "pending").length,
-      totalUsers: users.length,
-      avgBookingValue: completed.length ? Math.round(totalRevenue / completed.length) : 0,
-      dailyChart,
-      topBarbers,
+      allBarbers: barbers,
     });
     setLoading(false);
   };
@@ -79,7 +52,8 @@ export default function Overview() {
 
   const stats = [
     { icon: DollarSign, label: "Total Revenue", value: `$${data.totalRevenue.toLocaleString()}`, sub: `$${data.rev7} last 7d`, color: "text-emerald-600 bg-emerald-100" },
-    { icon: Calendar, label: "Total Bookings", value: data.totalBookings.toLocaleString(), sub: `Avg $${data.avgBookingValue}`, color: "text-blue-600 bg-blue-100" },
+    { icon: DollarSign, label: "Platform Fees", value: `$${data.totalPlatformFees.toLocaleString()}`, sub: "15% per booking", color: "text-teal-600 bg-teal-100" },
+    { icon: Calendar, label: "Paid Bookings", value: data.paidBookings, sub: `${data.unpaidBookings} unpaid`, color: "text-blue-600 bg-blue-100" },
     { icon: Scissors, label: "Active Barbers", value: data.activeBarbers, sub: `${data.pendingBarbers} pending`, color: "text-purple-600 bg-purple-100" },
     { icon: Users, label: "Total Users", value: data.totalUsers.toLocaleString(), sub: "All time", color: "text-orange-600 bg-orange-100" },
     { icon: TrendingUp, label: "Revenue (30d)", value: `$${data.rev30.toLocaleString()}`, sub: "Last 30 days", color: "text-teal-600 bg-teal-100" },
@@ -164,6 +138,9 @@ export default function Overview() {
           )}
         </div>
       </div>
+
+      {/* Stripe Readiness */}
+      <StripeReadiness barbers={data.allBarbers} />
     </div>
   );
 }

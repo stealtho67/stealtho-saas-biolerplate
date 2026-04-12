@@ -3,32 +3,38 @@
   "type": "object",
   "properties": {
     "client_email": {
-      "type": "string",
-      "description": "Email of the client"
+      "type": "string"
     },
     "client_name": {
-      "type": "string",
-      "description": "Name of the client"
+      "type": "string"
     },
     "barber_id": {
-      "type": "string",
-      "description": "ID of the barber"
+      "type": "string"
     },
     "barber_name": {
-      "type": "string",
-      "description": "Name of the barber"
+      "type": "string"
     },
     "service_id": {
-      "type": "string",
-      "description": "ID of the selected service"
+      "type": "string"
     },
     "service_name": {
-      "type": "string",
-      "description": "Name of the service booked"
+      "type": "string"
     },
     "price": {
       "type": "number",
-      "description": "Price of the booking"
+      "description": "Legacy price field \u2014 same as service_price"
+    },
+    "service_price": {
+      "type": "number",
+      "description": "Total service price charged to client"
+    },
+    "platform_fee": {
+      "type": "number",
+      "description": "Platform commission (15% of service_price)"
+    },
+    "barber_earnings": {
+      "type": "number",
+      "description": "Barber's net earnings after platform fee"
     },
     "date": {
       "type": "string",
@@ -39,8 +45,7 @@
       "description": "Time of booking (HH:MM)"
     },
     "duration_minutes": {
-      "type": "number",
-      "description": "Duration in minutes"
+      "type": "number"
     },
     "status": {
       "type": "string",
@@ -50,12 +55,37 @@
         "completed",
         "cancelled"
       ],
-      "default": "confirmed",
-      "description": "Booking status"
+      "default": "confirmed"
     },
     "notes": {
+      "type": "string"
+    },
+    "payment_status": {
       "type": "string",
-      "description": "Special requests or notes from client"
+      "enum": [
+        "unpaid",
+        "paid",
+        "refunded"
+      ],
+      "default": "unpaid",
+      "description": "Whether the booking has been paid"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "in_person",
+        "stripe",
+        "other"
+      ],
+      "description": "How payment was collected"
+    },
+    "paid_at": {
+      "type": "string",
+      "description": "ISO timestamp of when payment was confirmed"
+    },
+    "stripe_payment_intent_id": {
+      "type": "string",
+      "description": "Stripe PaymentIntent ID \u2014 populated when Stripe is active"
     }
   },
   "required": [

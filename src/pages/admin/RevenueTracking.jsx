@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { DollarSign, TrendingUp, BarChart2 } from "lucide-react";
+import { DollarSign, TrendingUp, BarChart2, CheckCircle2, Clock } from "lucide-react";
+import { calcFees } from "@/lib/stripeConfig";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, ResponsiveContainer, PieChart, Pie, Cell, Legend
@@ -24,15 +25,20 @@ export default function RevenueTracking() {
     setLoading(false);
   };
 
+  const getPrice = (b) => b.service_price || b.price || 0;
+  const getFee = (b) => b.platform_fee ?? calcFees(getPrice(b)).platformFee;
+
   if (loading) return <Loading />;
 
   const days = parseInt(range);
   const cutoff = subDays(new Date(), days);
   const ranged = bookings.filter(b => b.date && isAfter(parseISO(b.date), cutoff));
 
-  const totalGross = bookings.reduce((s, b) => s + (b.price || 0), 0);
-  const rangeGross = ranged.reduce((s, b) => s + (b.price || 0), 0);
-  const platformRevenue = totalGross * PLATFORM_FEE;
+  const paidBookings = bookings.filter(b => b.payment_status === "paid");
+  const unpaidBookings = bookings.filter(b => b.payment_status !== "paid");
+  const totalGross = bookings.reduce((s, b) => s + getPrice(b), 0);
+  const rangeGross = ranged.reduce((s, b) => s + getPrice(b), 0);
+  const platformRevenue = bookings.reduce((s, b) => s + getFee(b), 0);
   const avgValue = bookings.length ? Math.round(totalGross / bookings.length) : 0;
 
   // Daily breakdown
@@ -45,8 +51,8 @@ export default function RevenueTracking() {
     if (b.date) {
       const d = format(parseISO(b.date), "MMM d");
       if (dailyMap[d]) {
-        dailyMap[d].gross += b.price || 0;
-        dailyMap[d].fee += (b.price || 0) * PLATFORM_FEE;
+        dailyMap[d].gross += getPrice(b);
+        dailyMap[d].fee += getFee(b);
       }
     }
   });
@@ -55,8 +61,9 @@ export default function RevenueTracking() {
   // Per barber
   const barberMap = {};
   bookings.forEach(b => {
-    if (!barberMap[b.barber_id]) barberMap[b.barber_id] = { name: b.barber_name, gross: 0, count: 0 };
-    barberMap[b.barber_id].gross += b.price || 0;
+    if (!barberMap[b.barber_id]) barberMap[b.barber_id] = { name: b.barber_name, gross: 0, earnings: 0, count: 0 };
+    barberMap[b.barber_id].gross += getPrice(b);
+    barberMap[b.barber_id].earnings += b.barber_earnings ?? calcFees(getPrice(b)).barberEarnings;
     barberMap[b.barber_id].count += 1;
   });
   const perBarber = Object.values(barberMap).sort((a, b) => b.gross - a.gross).slice(0, 8);
@@ -65,8 +72,10 @@ export default function RevenueTracking() {
   const stats = [
     { icon: DollarSign, label: "Total Gross Revenue", value: `$${totalGross.toLocaleString()}`, color: "text-emerald-600 bg-emerald-100" },
     { icon: TrendingUp, label: `Revenue (${range}d)`, value: `$${rangeGross.toLocaleString()}`, color: "text-blue-600 bg-blue-100" },
-    { icon: DollarSign, label: "Platform Fees (10%)", value: `$${platformRevenue.toLocaleString()}`, color: "text-purple-600 bg-purple-100" },
-    { icon: BarChart2, label: "Avg Booking Value", value: `$${avgValue}`, color: "text-orange-600 bg-orange-100" },
+    { icon: DollarSign, label: "Platform Fees (15%)", value: `$${platformRevenue.toLocaleString()}`, color: "text-purple-600 bg-purple-100" },
+    { icon: CheckCircle2, label: "Paid Bookings", value: paidBookings.length, color: "text-teal-600 bg-teal-100" },
+    { icon: Clock, label: "Unpaid Bookings", value: unpaidBookings.length, color: "text-orange-600 bg-orange-100" },
+    { icon: BarChart2, label: "Avg Booking Value", value: `$${avgValue}`, color: "text-rose-600 bg-rose-100" },
   ];
 
   return (
@@ -88,7 +97,7 @@ export default function RevenueTracking() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {stats.map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4">
             <div className={`w-9 h-9 rounded-lg ${s.color} flex items-center justify-center mb-3`}>
@@ -136,7 +145,10 @@ export default function RevenueTracking() {
                     <div className="h-full bg-primary rounded-full" style={{ width: `${(b.gross / (perBarber[0]?.gross || 1)) * 100}%` }} />
                   </div>
                 </div>
-                <span className="text-sm font-heading font-bold text-emerald-600 w-16 text-right">${b.gross}</span>
+                <div className="text-right">
+                <span className="text-sm font-heading font-bold text-emerald-600">${b.gross}</span>
+                <p className="text-xs text-slate-400">Net: ${b.earnings?.toFixed(0)}</p>
+              </div>
               </div>
             ))}
             {perBarber.length === 0 && <p className="text-center text-slate-400 text-sm py-6">No data yet</p>}

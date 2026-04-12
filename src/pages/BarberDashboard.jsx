@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Calendar, DollarSign, Users, Star, TrendingUp, Clock } from "lucide-react";
+import PayoutsSection from "@/components/PayoutsSection";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -102,6 +103,9 @@ export default function BarberDashboard() {
         <p className="font-heading font-bold text-3xl">${totalEarnings}</p>
         <p className="text-xs opacity-60 mt-1">{completedBookings.length} completed bookings</p>
       </div>
+
+      {/* Payouts Section */}
+      <PayoutsSection barber={barber} bookings={bookings} />
 
       {/* Upcoming Appointments */}
       <div className="bg-card rounded-2xl border border-border p-6">

@@ -35,37 +35,30 @@
     },
     "license_verified": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether barber's license has been verified"
+      "default": false
     },
     "license_image": {
-      "type": "string",
-      "description": "URL of uploaded license document"
+      "type": "string"
     },
     "rating": {
       "type": "number",
-      "default": 0,
-      "description": "Average rating"
+      "default": 0
     },
     "total_reviews": {
       "type": "number",
-      "default": 0,
-      "description": "Total number of reviews"
+      "default": 0
     },
     "total_bookings": {
       "type": "number",
-      "default": 0,
-      "description": "Total completed bookings"
+      "default": 0
     },
     "is_available_now": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether barber is currently available"
+      "default": false
     },
     "is_featured": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether barber is featured on homepage"
+      "default": false
     },
     "status": {
       "type": "string",
@@ -74,23 +67,44 @@
         "active",
         "suspended"
       ],
-      "default": "pending",
-      "description": "Account status"
+      "default": "pending"
     },
     "working_hours": {
-      "type": "object",
-      "description": "Working hours per day of week"
+      "type": "object"
     },
     "years_experience": {
-      "type": "number",
-      "description": "Years of experience"
+      "type": "number"
     },
     "specialties": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Barber specialties like fades, braids, etc."
+      }
+    },
+    "stripe_account_id": {
+      "type": "string",
+      "description": "Stripe Connect account ID (acct_xxx) \u2014 set when barber connects Stripe"
+    },
+    "stripe_onboarding_complete": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once barber has completed Stripe onboarding flow"
+    },
+    "payouts_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when Stripe confirms charges and payouts are enabled"
+    },
+    "stripe_status": {
+      "type": "string",
+      "enum": [
+        "not_connected",
+        "onboarding_required",
+        "onboarding_in_progress",
+        "active"
+      ],
+      "default": "not_connected",
+      "description": "Current Stripe Connect status for this barber"
     }
   },
   "required": [

@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Clock, CheckCircle2, Loader2 } from "lucide-react";
+import { calcFees } from "@/lib/stripeConfig";
 import { format, addDays, isBefore, startOfToday } from "date-fns";
 
 const TIME_SLOTS = [
@@ -60,6 +61,7 @@ export default function BookingModal({ open, onClose, barber, services }) {
   const handleBook = async () => {
     setLoading(true);
     const user = await base44.auth.me();
+    const fees = calcFees(selectedService.price);
     await base44.entities.Booking.create({
       client_email: user.email,
       client_name: user.full_name,
@@ -68,10 +70,14 @@ export default function BookingModal({ open, onClose, barber, services }) {
       service_id: selectedService.id,
       service_name: selectedService.service_name,
       price: selectedService.price,
+      service_price: fees.servicePrice,
+      platform_fee: fees.platformFee,
+      barber_earnings: fees.barberEarnings,
       date: format(selectedDate, "yyyy-MM-dd"),
       time: selectedTime,
       duration_minutes: selectedService.duration_minutes,
       status: "confirmed",
+      payment_status: "unpaid",
       notes: notes
     });
     
