@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { CheckCircle, XCircle, Eye, BadgeCheck, MapPin, Star, Calendar, Ban, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Eye, BadgeCheck, MapPin, Star, Calendar, Ban, Loader2, Zap } from "lucide-react";
+import { stripeStatusInfo } from "@/lib/stripeConfig";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -135,11 +136,8 @@ export default function BarberManagement() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-500 hidden md:table-cell">{b.city}</td>
-                    <td className="px-4 py-3">
-                      <span className="flex items-center gap-1 text-amber-600">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        {b.rating?.toFixed(1) || "—"}
-                      </span>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      {(() => { const s = stripeStatusInfo(b.stripe_status || "not_connected"); return <span className={`text-xs px-2 py-0.5 rounded-full border ${s.bg} ${s.color}`}>{s.label}</span>; })()}
                     </td>
                     <td className="px-4 py-3 text-slate-600 hidden md:table-cell">{b.total_bookings || 0}</td>
                     <td className="px-4 py-3">

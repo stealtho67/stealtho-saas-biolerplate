@@ -51,6 +51,16 @@ export default function MyBookings() {
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status } : b));
   };
 
+  const markPaid = async (booking) => {
+    const updates = {
+      payment_status: "paid",
+      payment_method: "in_person",
+      paid_at: new Date().toISOString(),
+    };
+    await base44.entities.Booking.update(booking.id, updates);
+    setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, ...updates } : b));
+  };
+
   const submitReview = async () => {
     setSubmitting(true);
     await base44.entities.Review.create({
@@ -102,9 +112,14 @@ export default function MyBookings() {
             {isBarber ? booking.client_name : booking.barber_name}
           </p>
         </div>
-        <Badge className={`${statusColors[booking.status]} border-0 text-xs`}>
-          {booking.status}
-        </Badge>
+        <div className="flex flex-col items-end gap-1">
+          <Badge className={`${statusColors[booking.status]} border-0 text-xs`}>
+            {booking.status}
+          </Badge>
+          <Badge className={`border-0 text-xs ${booking.payment_status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+            {booking.payment_status === "paid" ? "Paid" : "Unpaid"}
+          </Badge>
+        </div>
       </div>
       <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
@@ -115,12 +130,20 @@ export default function MyBookings() {
           <Clock className="w-3.5 h-3.5" />
           {booking.time}
         </span>
-        <span className="font-heading font-semibold text-foreground">${booking.price}</span>
+        <span className="font-heading font-semibold text-foreground">${booking.service_price || booking.price}</span>
+        {isBarber && booking.barber_earnings != null && (
+          <span className="text-emerald-600 font-medium">Your cut: ${booking.barber_earnings}</span>
+        )}
       </div>
       <div className="flex gap-2 mt-3">
         {isBarber && booking.status === "confirmed" && (
           <Button size="sm" variant="default" className="h-8 text-xs rounded-lg" onClick={() => updateStatus(booking.id, "completed")}>
             Mark Complete
+          </Button>
+        )}
+        {isBarber && booking.status === "completed" && booking.payment_status !== "paid" && (
+          <Button size="sm" className="h-8 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => markPaid(booking)}>
+            Mark Paid
           </Button>
         )}
         {booking.status === "confirmed" && (

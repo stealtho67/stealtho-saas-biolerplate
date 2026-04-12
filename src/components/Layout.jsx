@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, Calendar, User, Scissors, Menu, X, LogOut } from "lucide-react";
+import { Home, Search, Calendar, User, Scissors, Menu, X, LogOut, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -24,10 +24,19 @@ export default function Layout() {
     }
   };
 
+  const isAdmin = user?.role === "admin";
   const isBarber = user?.role === "barber";
   const isActive = (path) => location.pathname === path;
 
-  const navItems = isBarber
+  const navItems = isAdmin
+    ? [
+        { path: "/", icon: Home, label: "Home" },
+        { path: "/explore", icon: Search, label: "Explore" },
+        { path: "/my-bookings", icon: Calendar, label: "Bookings" },
+        { path: "/profile", icon: User, label: "Profile" },
+        { path: "/admin", icon: Shield, label: "Admin" },
+      ]
+    : isBarber
     ? [
         { path: "/", icon: Home, label: "Home" },
         { path: "/dashboard", icon: Scissors, label: "Dashboard" },

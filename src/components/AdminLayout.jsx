@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Scissors, Calendar, DollarSign,
-  Users, Star, LogOut, Menu, X, Shield
+  Users, Star, LogOut, Menu, X, Shield, Settings, Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -14,6 +14,7 @@ const NAV = [
   { path: "/admin/revenue", icon: DollarSign, label: "Revenue" },
   { path: "/admin/users", icon: Users, label: "Users" },
   { path: "/admin/reviews", icon: Star, label: "Reviews" },
+  { path: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function AdminLayout() {
@@ -76,6 +77,12 @@ export default function AdminLayout() {
         ))}
       </nav>
       <div className="px-3 py-4 border-t border-slate-800">
+        <Link
+          to="/"
+          className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+        >
+          <Home className="w-4 h-4" /> Back to Site
+        </Link>
         <div className="px-3 py-2 mb-2">
           <p className="text-xs font-medium text-slate-300 truncate">{user?.full_name}</p>
           <p className="text-[10px] text-slate-500 truncate">{user?.email}</p>

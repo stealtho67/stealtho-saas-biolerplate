@@ -8,7 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
-import { User, Scissors, Upload, Loader2, BadgeCheck, Plus, X, Trash2 } from "lucide-react";
+import { User, Scissors, Upload, Loader2, BadgeCheck, Plus, X, Trash2, Shield, Zap } from "lucide-react";
+import { stripeStatusInfo } from "@/lib/stripeConfig";
 import { toast } from "sonner";
 
 export default function Profile() {
@@ -145,45 +146,71 @@ export default function Profile() {
     );
   }
 
-  // Client view - option to become barber
+  const isAdmin = user?.role === "admin";
+
+  // Non-barber view (client or admin)
   if (!isBarber) {
+    const roleLabel = isAdmin ? "Admin" : "Client";
+    const roleBgColor = isAdmin ? "bg-red-100 text-red-700" : "bg-secondary text-secondary-foreground";
     return (
       <div className="max-w-lg mx-auto px-4 py-6 pb-24 md:pb-8">
         <h1 className="font-heading font-bold text-2xl mb-6">My Profile</h1>
         <div className="bg-card rounded-2xl border border-border p-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <User className="w-7 h-7 text-primary" />
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isAdmin ? "bg-red-50" : "bg-primary/10"}`}>
+              {isAdmin ? <Shield className="w-7 h-7 text-red-600" /> : <User className="w-7 h-7 text-primary" />}
             </div>
             <div>
               <h3 className="font-heading font-semibold text-lg">{user?.full_name}</h3>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
-              <Badge className="mt-1 bg-secondary text-secondary-foreground border-0">Client</Badge>
+              <Badge className={`mt-1 border-0 ${roleBgColor}`}>{roleLabel}</Badge>
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-2xl border border-border p-6 mt-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Scissors className="w-5 h-5 text-primary" />
-            <h3 className="font-heading font-semibold">Are you a barber?</h3>
+
+        {isAdmin && (
+          <div className="bg-card rounded-2xl border border-red-200 p-6 mt-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Shield className="w-5 h-5 text-red-600" />
+              <h3 className="font-heading font-semibold">Admin Controls</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">Manage the NextCut platform, approve barbers, and track revenue.</p>
+            <Link to="/admin" className="block">
+              <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
+                <Shield className="w-4 h-4 mr-2" /> Open Admin Dashboard
+              </Button>
+            </Link>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Join NextCut as a barber to get clients, manage bookings, and grow your business.
-          </p>
-          <Link to="/apply" className="block">
-            <Button className="w-full">
-              Apply as a Barber
-            </Button>
-          </Link>
-        </div>
+        )}
+
+        {!isAdmin && (
+          <div className="bg-card rounded-2xl border border-border p-6 mt-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Scissors className="w-5 h-5 text-primary" />
+              <h3 className="font-heading font-semibold">Are you a barber?</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Join NextCut as a barber to get clients, manage bookings, and grow your business.
+            </p>
+            <Link to="/apply" className="block">
+              <Button className="w-full">Apply as a Barber</Button>
+            </Link>
+          </div>
+        )}
       </div>
     );
   }
 
   // Barber view
+  const stripeInfo = stripeStatusInfo(barber?.stripe_status || "not_connected");
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-8">
-      <h1 className="font-heading font-bold text-2xl mb-6">Barber Profile</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="font-heading font-bold text-2xl">Barber Profile</h1>
+        <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${stripeInfo.bg} ${stripeInfo.color}`}>
+          <Zap className="w-3 h-3 inline mr-1" />{stripeInfo.label}
+        </span>
+      </div>
 
       <Tabs defaultValue="profile">
         <TabsList className="w-full bg-secondary rounded-xl h-11">
