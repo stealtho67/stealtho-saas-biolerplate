@@ -1,12 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Zap, AlertCircle, CheckCircle2, Clock, ExternalLink, Info } from "lucide-react";
-import { calcFees, stripeStatusInfo, PLATFORM_FEE_PERCENT, STRIPE_ACTIVE } from "@/lib/stripeConfig";
+import { calcFees, stripeStatusInfo, STRIPE_ACTIVE } from "@/lib/stripeConfig";
+import { getCommissionRate } from "@/lib/platformSettings";
 import { toast } from "sonner";
 
 export default function PayoutsSection({ barber, bookings }) {
   const [connecting, setConnecting] = useState(false);
+  const [commissionRate, setCommissionRate] = useState(0.15);
+
+  useEffect(() => {
+    getCommissionRate().then(setCommissionRate);
+  }, []);
 
   const stripeInfo = stripeStatusInfo(barber?.stripe_status || "not_connected");
   const isPayoutReady = barber?.stripe_status === "active" && barber?.payouts_enabled;
@@ -25,9 +31,6 @@ export default function PayoutsSection({ barber, bookings }) {
       return;
     }
     setConnecting(true);
-    // FUTURE: call /api/stripe/connect-account → redirect to onboarding URL
-    // const { onboarding_url } = await fetch("/api/stripe/connect-account").then(r => r.json());
-    // window.location.href = onboarding_url;
     await base44.entities.Barber.update(barber.id, { stripe_status: "onboarding_in_progress" });
     toast.success("Stripe onboarding initiated.");
     setConnecting(false);
@@ -42,7 +45,6 @@ export default function PayoutsSection({ barber, bookings }) {
         </span>
       </div>
 
-      {/* Stripe Connection Banner */}
       {!isPayoutReady && (
         <div className={`flex items-start gap-3 p-4 rounded-xl border ${stripeInfo.bg}`}>
           <AlertCircle className={`w-4 h-4 mt-0.5 shrink-0 ${stripeInfo.color}`} />
@@ -79,7 +81,6 @@ export default function PayoutsSection({ barber, bookings }) {
         </div>
       )}
 
-      {/* Earnings Grid */}
       <div className="grid grid-cols-2 gap-3">
         <div className="p-4 bg-secondary rounded-xl">
           <div className="flex items-center gap-1.5 mb-2">
@@ -103,7 +104,7 @@ export default function PayoutsSection({ barber, bookings }) {
             <span className="text-xs text-muted-foreground">Est. Platform Fees</span>
           </div>
           <p className="font-heading font-bold text-xl">${estimatedPlatformFees.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{(PLATFORM_FEE_PERCENT * 100).toFixed(0)}% of paid bookings</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{(commissionRate * 100).toFixed(0)}% of paid bookings</p>
         </div>
         <div className="p-4 bg-secondary rounded-xl">
           <div className="flex items-center gap-1.5 mb-2">
@@ -118,7 +119,7 @@ export default function PayoutsSection({ barber, bookings }) {
       <div className="flex items-start gap-2 text-xs text-muted-foreground">
         <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
         <span>
-          Platform fee is {(PLATFORM_FEE_PERCENT * 100).toFixed(0)}% per booking.
+          Platform fee is {(commissionRate * 100).toFixed(0)}% per booking.
           Stripe payouts are sent automatically once activated.
         </span>
       </div>

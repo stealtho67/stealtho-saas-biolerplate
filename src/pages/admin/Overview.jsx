@@ -36,6 +36,32 @@ export default function Overview() {
     const rev7 = completed.filter(b => isAfter(parseISO(b.date), d7)).reduce((s, b) => s + (b.service_price || b.price || 0), 0);
     const rev30 = completed.filter(b => isAfter(parseISO(b.date), d30)).reduce((s, b) => s + (b.service_price || b.price || 0), 0);
 
+    // Daily chart — last 14 days
+    const dailyMap = {};
+    for (let i = 13; i >= 0; i--) {
+      const d = format(subDays(now, i), "MMM d");
+      dailyMap[d] = { date: d, revenue: 0, bookings: 0 };
+    }
+    completed.forEach(b => {
+      if (b.date) {
+        const d = format(parseISO(b.date), "MMM d");
+        if (dailyMap[d]) {
+          dailyMap[d].revenue += (b.service_price || b.price || 0);
+          dailyMap[d].bookings += 1;
+        }
+      }
+    });
+    const dailyChart = Object.values(dailyMap);
+
+    // Top barbers by revenue
+    const barberRevMap = {};
+    completed.forEach(b => {
+      if (!barberRevMap[b.barber_id]) barberRevMap[b.barber_id] = { id: b.barber_id, name: b.barber_name, revenue: 0, bookings: 0 };
+      barberRevMap[b.barber_id].revenue += (b.service_price || b.price || 0);
+      barberRevMap[b.barber_id].bookings += 1;
+    });
+    const topBarbers = Object.values(barberRevMap).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
     setData({
       totalRevenue,
       totalPlatformFees,
@@ -44,6 +70,11 @@ export default function Overview() {
       rev7,
       rev30,
       allBarbers: barbers,
+      activeBarbers: barbers.filter(b => b.status === "active").length,
+      pendingBarbers: barbers.filter(b => b.status === "pending").length,
+      totalUsers: users.length,
+      dailyChart,
+      topBarbers,
     });
     setLoading(false);
   };
