@@ -1,33 +1,37 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Calendar, DollarSign, Users, Star, TrendingUp, Clock, Info } from "lucide-react";
+import { Calendar, DollarSign, Users, Star, TrendingUp, Clock, Info, Link2, Copy, LayoutDashboard, UserCircle, Scissors, Images } from "lucide-react";
 import { COMMISSION_LABELS } from "@/lib/commissionRules";
 import PayoutsSection from "@/components/PayoutsSection";
+import ProfileEditor from "@/components/barber/ProfileEditor";
+import ServicesEditor from "@/components/barber/ServicesEditor";
+import PortfolioEditor from "@/components/barber/PortfolioEditor";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 export default function BarberDashboard() {
   const [barber, setBarber] = useState(null);
+  const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useEffect(() => { loadDashboard(); }, []);
 
   const loadDashboard = async () => {
     const me = await base44.auth.me();
     const barbers = await base44.entities.Barber.filter({ user_email: me.email });
-    if (barbers.length === 0) {
-      setLoading(false);
-      return;
-    }
+    if (barbers.length === 0) { setLoading(false); return; }
     const b = barbers[0];
     setBarber(b);
-    const allBookings = await base44.entities.Booking.filter({ barber_id: b.id });
+    const [allBookings, svcList] = await Promise.all([
+      base44.entities.Booking.filter({ barber_id: b.id }),
+      base44.entities.Service.filter({ barber_id: b.id }),
+    ]);
     setBookings(allBookings);
+    setServices(svcList);
     setLoading(false);
   };
 
@@ -41,13 +45,90 @@ export default function BarberDashboard() {
 
   if (!barber) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <h2 className="font-heading font-bold text-xl">Set up your barber profile first</h2>
-        <Link to="/profile"><Button className="mt-4">Go to Profile</Button></Link>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 gap-4">
+        <Scissors className="w-12 h-12 text-muted-foreground/30" />
+        <div>
+          <h2 className="font-heading font-bold text-xl">No barber profile found</h2>
+          <p className="text-sm text-muted-foreground mt-1">Apply to become a barber on NextCut</p>
+        </div>
+        <Link to="/apply"><Button className="mt-2">Apply as a Barber</Button></Link>
       </div>
     );
   }
 
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="font-heading font-bold text-2xl">My Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Welcome back, {barber.display_name}</p>
+        </div>
+        {barber.status === "pending" && (
+          <span className="text-xs px-3 py-1 rounded-full bg-amber-100 text-amber-700 font-medium border border-amber-200">
+            Pending Approval
+          </span>
+        )}
+        {barber.status === "active" && (
+          <span className="text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium border border-emerald-200">
+            ✓ Active
+          </span>
+        )}
+      </div>
+
+      <Tabs defaultValue="overview">
+        <TabsList className="w-full bg-secondary rounded-xl h-12 mb-6">
+          <TabsTrigger value="overview" className="flex-1 rounded-lg flex items-center gap-1.5">
+            <LayoutDashboard className="w-3.5 h-3.5" /><span className="hidden sm:inline">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="profile" className="flex-1 rounded-lg flex items-center gap-1.5">
+            <UserCircle className="w-3.5 h-3.5" /><span className="hidden sm:inline">Profile</span>
+          </TabsTrigger>
+          <TabsTrigger value="services" className="flex-1 rounded-lg flex items-center gap-1.5">
+            <Scissors className="w-3.5 h-3.5" /><span className="hidden sm:inline">Services</span>
+          </TabsTrigger>
+          <TabsTrigger value="portfolio" className="flex-1 rounded-lg flex items-center gap-1.5">
+            <Images className="w-3.5 h-3.5" /><span className="hidden sm:inline">Portfolio</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ── OVERVIEW TAB ── */}
+        <TabsContent value="overview">
+          <OverviewTab barber={barber} bookings={bookings} />
+        </TabsContent>
+
+        {/* ── PROFILE TAB ── */}
+        <TabsContent value="profile">
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <h2 className="font-heading font-semibold mb-5">Edit Profile</h2>
+            <ProfileEditor barber={barber} onSaved={setBarber} />
+          </div>
+        </TabsContent>
+
+        {/* ── SERVICES TAB ── */}
+        <TabsContent value="services">
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <h2 className="font-heading font-semibold mb-5">Manage Services</h2>
+            <ServicesEditor barberId={barber.id} initialServices={services} />
+          </div>
+        </TabsContent>
+
+        {/* ── PORTFOLIO TAB ── */}
+        <TabsContent value="portfolio">
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <h2 className="font-heading font-semibold mb-5">Portfolio</h2>
+            <PortfolioEditor barber={barber} onSaved={setBarber} />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────
+// Overview sub-component
+// ────────────────────────────────────────────────
+function OverviewTab({ barber, bookings }) {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -65,30 +146,20 @@ export default function BarberDashboard() {
     .slice(0, 5);
 
   const stats = [
-    { icon: DollarSign, label: "This Month", value: `$${monthEarnings}`, color: "text-emerald-600 bg-emerald-100" },
+    { icon: DollarSign, label: "This Month", value: `$${monthEarnings.toFixed(0)}`, color: "text-emerald-600 bg-emerald-100" },
     { icon: Calendar, label: "Month Bookings", value: monthBookings.length, color: "text-blue-600 bg-blue-100" },
     { icon: Users, label: "Total Clients", value: completedBookings.length, color: "text-purple-600 bg-purple-100" },
     { icon: Star, label: "Rating", value: barber.rating?.toFixed(1) || "New", color: "text-amber-600 bg-amber-100" },
   ];
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-heading font-bold text-2xl">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Welcome back, {barber.display_name}</p>
-        </div>
-        <Link to="/profile">
-          <Button variant="outline" size="sm">Edit Profile</Button>
-        </Link>
-      </div>
-
+    <div className="space-y-5">
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3">
         {stats.map((stat) => (
           <div key={stat.label} className="p-4 bg-card rounded-2xl border border-border">
             <div className={`w-9 h-9 rounded-xl ${stat.color} flex items-center justify-center mb-3`}>
-              <stat.icon className="w-4.5 h-4.5" />
+              <stat.icon className="w-4 h-4" />
             </div>
             <p className="font-heading font-bold text-2xl">{stat.value}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
@@ -96,24 +167,27 @@ export default function BarberDashboard() {
         ))}
       </div>
 
-      {/* Total Earnings Card */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground mb-6">
+      {/* Total Earnings Banner */}
+      <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground">
         <div className="flex items-center gap-2 mb-1">
           <TrendingUp className="w-4 h-4 opacity-80" />
           <span className="text-sm opacity-80">Total Earnings</span>
         </div>
-        <p className="font-heading font-bold text-3xl">${totalEarnings}</p>
+        <p className="font-heading font-bold text-3xl">${totalEarnings.toFixed(2)}</p>
         <p className="text-xs opacity-60 mt-1">{completedBookings.length} completed bookings</p>
       </div>
 
-      {/* Payouts Section */}
+      {/* Payouts */}
       <PayoutsSection barber={barber} bookings={bookings} />
 
-      {/* Referral / Direct Link */}
-      <div className="bg-card rounded-2xl border border-border p-5 mt-6">
-        <h3 className="font-heading font-semibold mb-1 text-sm">Your Direct Booking Link</h3>
+      {/* Direct Booking Link */}
+      <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Link2 className="w-4 h-4 text-primary" />
+          <h3 className="font-heading font-semibold text-sm">Your Direct Booking Link</h3>
+        </div>
         <p className="text-xs text-muted-foreground mb-3">
-          Share this link with your own clients. Bookings from it are charged 10% commission (vs 20% for new NextCut leads).
+          Share with your own clients — earns you 10% commission rate (vs 20% for marketplace leads).
         </p>
         <div className="flex gap-2">
           <input
@@ -121,23 +195,19 @@ export default function BarberDashboard() {
             value={`${window.location.origin}/barber/${barber.id}?source=barber_direct_link`}
             className="flex-1 text-xs bg-secondary border border-border rounded-lg px-3 py-2 text-muted-foreground"
           />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/barber/${barber.id}?source=barber_direct_link`);
-              toast.success("Link copied!");
-            }}
-          >
-            Copy
+          <Button size="sm" variant="outline" onClick={() => {
+            navigator.clipboard.writeText(`${window.location.origin}/barber/${barber.id}?source=barber_direct_link`);
+            toast.success("Link copied!");
+          }}>
+            <Copy className="w-3.5 h-3.5 mr-1" /> Copy
           </Button>
         </div>
       </div>
 
-      {/* Commission Breakdown */}
+      {/* Earnings Breakdown */}
       <div className="bg-card rounded-2xl border border-border p-6">
         <h3 className="font-heading font-semibold mb-1">Earnings Breakdown</h3>
-        <p className="text-xs text-muted-foreground mb-4">Your commission rate depends on how the client was acquired. Tips are always 100% yours.</p>
+        <p className="text-xs text-muted-foreground mb-4">Commission rate depends on how the client was acquired. Tips are always 100% yours.</p>
         <div className="space-y-3">
           {["new_nextcut_lead", "repeat_client", "barber_direct_client"].map(type => {
             const typeBookings = completedBookings.filter(b => (b.commission_type || "new_nextcut_lead") === type);
@@ -145,23 +215,12 @@ export default function BarberDashboard() {
             const gross = typeBookings.reduce((s, b) => s + (b.service_price || b.price || 0), 0);
             const fees = typeBookings.reduce((s, b) => s + (b.platform_fee || 0), 0);
             const tips = typeBookings.reduce((s, b) => s + (b.tip_amount || 0), 0);
-            const rate = typeBookings[0]?.commission_rate;
-            const colorMap = {
-              new_nextcut_lead: "bg-purple-100 text-purple-700",
-              repeat_client: "bg-blue-100 text-blue-700",
-              barber_direct_client: "bg-emerald-100 text-emerald-700",
-            };
-            const rateDesc = {
-              new_nextcut_lead: "New clients from NextCut — 20% commission",
-              repeat_client: "Returning clients — 15% commission",
-              barber_direct_client: "Your own clients — 10% commission",
-            };
+            const colorMap = { new_nextcut_lead: "bg-purple-100 text-purple-700", repeat_client: "bg-blue-100 text-blue-700", barber_direct_client: "bg-emerald-100 text-emerald-700" };
+            const rateDesc = { new_nextcut_lead: "New NextCut leads — 20%", repeat_client: "Returning clients — 15%", barber_direct_client: "Your own clients — 10%" };
             return (
               <div key={type} className="p-4 bg-secondary rounded-xl">
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${colorMap[type]}`}>
-                    {COMMISSION_LABELS[type]}
-                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${colorMap[type]}`}>{COMMISSION_LABELS[type]}</span>
                   <span className="text-xs text-muted-foreground">{typeBookings.length} bookings</span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">{rateDesc[type]}</p>
@@ -179,7 +238,7 @@ export default function BarberDashboard() {
         </div>
         <div className="flex items-start gap-2 mt-4 text-xs text-muted-foreground">
           <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          <span>Commission is calculated only on service price. Tips go entirely to you and are never shared with the platform.</span>
+          <span>Commission is calculated only on service price. Tips are never shared with the platform.</span>
         </div>
       </div>
 
