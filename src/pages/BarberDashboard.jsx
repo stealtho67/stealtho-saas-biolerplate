@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Calendar, DollarSign, Users, Star, TrendingUp, Clock } from "lucide-react";
+import { Calendar, DollarSign, Users, Star, TrendingUp, Clock, Info } from "lucide-react";
+import { COMMISSION_LABELS } from "@/lib/commissionRules";
 import PayoutsSection from "@/components/PayoutsSection";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function BarberDashboard() {
   const [barber, setBarber] = useState(null);
@@ -55,8 +57,8 @@ export default function BarberDashboard() {
     const d = parseISO(b.date);
     return isWithinInterval(d, { start: monthStart, end: monthEnd });
   });
-  const totalEarnings = completedBookings.reduce((sum, b) => sum + (b.price || 0), 0);
-  const monthEarnings = monthBookings.reduce((sum, b) => sum + (b.price || 0), 0);
+  const totalEarnings = completedBookings.reduce((sum, b) => sum + (b.barber_earnings ?? b.price ?? 0), 0);
+  const monthEarnings = monthBookings.reduce((sum, b) => sum + (b.barber_earnings ?? b.price ?? 0), 0);
   const upcomingBookings = bookings
     .filter(b => b.status === "confirmed")
     .sort((a, b) => new Date(a.date + "T" + a.time) - new Date(b.date + "T" + b.time))
@@ -106,6 +108,80 @@ export default function BarberDashboard() {
 
       {/* Payouts Section */}
       <PayoutsSection barber={barber} bookings={bookings} />
+
+      {/* Referral / Direct Link */}
+      <div className="bg-card rounded-2xl border border-border p-5 mt-6">
+        <h3 className="font-heading font-semibold mb-1 text-sm">Your Direct Booking Link</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Share this link with your own clients. Bookings from it are charged 10% commission (vs 20% for new NextCut leads).
+        </p>
+        <div className="flex gap-2">
+          <input
+            readOnly
+            value={`${window.location.origin}/barber/${barber.id}?source=barber_direct_link`}
+            className="flex-1 text-xs bg-secondary border border-border rounded-lg px-3 py-2 text-muted-foreground"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/barber/${barber.id}?source=barber_direct_link`);
+              toast.success("Link copied!");
+            }}
+          >
+            Copy
+          </Button>
+        </div>
+      </div>
+
+      {/* Commission Breakdown */}
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <h3 className="font-heading font-semibold mb-1">Earnings Breakdown</h3>
+        <p className="text-xs text-muted-foreground mb-4">Your commission rate depends on how the client was acquired. Tips are always 100% yours.</p>
+        <div className="space-y-3">
+          {["new_nextcut_lead", "repeat_client", "barber_direct_client"].map(type => {
+            const typeBookings = completedBookings.filter(b => (b.commission_type || "new_nextcut_lead") === type);
+            if (typeBookings.length === 0) return null;
+            const gross = typeBookings.reduce((s, b) => s + (b.service_price || b.price || 0), 0);
+            const fees = typeBookings.reduce((s, b) => s + (b.platform_fee || 0), 0);
+            const tips = typeBookings.reduce((s, b) => s + (b.tip_amount || 0), 0);
+            const rate = typeBookings[0]?.commission_rate;
+            const colorMap = {
+              new_nextcut_lead: "bg-purple-100 text-purple-700",
+              repeat_client: "bg-blue-100 text-blue-700",
+              barber_direct_client: "bg-emerald-100 text-emerald-700",
+            };
+            const rateDesc = {
+              new_nextcut_lead: "New clients from NextCut — 20% commission",
+              repeat_client: "Returning clients — 15% commission",
+              barber_direct_client: "Your own clients — 10% commission",
+            };
+            return (
+              <div key={type} className="p-4 bg-secondary rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${colorMap[type]}`}>
+                    {COMMISSION_LABELS[type]}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{typeBookings.length} bookings</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">{rateDesc[type]}</p>
+                <div className="flex gap-4 text-xs">
+                  <div><p className="text-muted-foreground">Gross</p><p className="font-semibold">${gross.toFixed(2)}</p></div>
+                  <div><p className="text-muted-foreground">Platform fee</p><p className="font-semibold text-destructive">-${fees.toFixed(2)}</p></div>
+                  {tips > 0 && <div><p className="text-muted-foreground">Tips (yours)</p><p className="font-semibold text-emerald-600">+${tips.toFixed(2)}</p></div>}
+                </div>
+              </div>
+            );
+          })}
+          {completedBookings.length === 0 && (
+            <p className="text-center text-muted-foreground text-sm py-4">No completed bookings yet</p>
+          )}
+        </div>
+        <div className="flex items-start gap-2 mt-4 text-xs text-muted-foreground">
+          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>Commission is calculated only on service price. Tips go entirely to you and are never shared with the platform.</span>
+        </div>
+      </div>
 
       {/* Upcoming Appointments */}
       <div className="bg-card rounded-2xl border border-border p-6">

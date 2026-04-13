@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { DollarSign, Calendar, Scissors, Users, TrendingUp, Zap } from "lucide-react";
 import StripeReadiness from "@/components/admin/StripeReadiness";
 import { calcFees } from "@/lib/stripeConfig";
+import { COMMISSION_LABELS } from "@/lib/commissionRules";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, ResponsiveContainer
@@ -62,6 +63,16 @@ export default function Overview() {
     });
     const topBarbers = Object.values(barberRevMap).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
+    // Commission type breakdown (paid bookings only)
+    const commissionBreakdown = {};
+    paid.forEach(b => {
+      const type = b.commission_type || "new_nextcut_lead";
+      if (!commissionBreakdown[type]) commissionBreakdown[type] = { count: 0, revenue: 0, fees: 0 };
+      commissionBreakdown[type].count += 1;
+      commissionBreakdown[type].revenue += (b.service_price || b.price || 0);
+      commissionBreakdown[type].fees += (b.platform_fee ?? calcFees(b.price || 0).platformFee);
+    });
+
     setData({
       totalRevenue,
       totalPlatformFees,
@@ -75,6 +86,7 @@ export default function Overview() {
       totalUsers: users.length,
       dailyChart,
       topBarbers,
+      commissionBreakdown,
     });
     setLoading(false);
   };
@@ -168,6 +180,40 @@ export default function Overview() {
             <p className="text-center text-slate-400 text-sm py-4">No completed bookings yet</p>
           )}
         </div>
+      </div>
+
+      {/* Commission Type Breakdown */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="font-heading font-semibold text-sm text-slate-700 mb-4">Revenue by Commission Type</h3>
+        {Object.keys(COMMISSION_LABELS).length === 0 || Object.keys(data.commissionBreakdown).length === 0 ? (
+          <p className="text-center text-slate-400 text-sm py-4">No paid bookings yet</p>
+        ) : (
+          <div className="space-y-3">
+            {["new_nextcut_lead", "repeat_client", "barber_direct_client"].map(type => {
+              const d = data.commissionBreakdown[type];
+              if (!d) return null;
+              const colorMap = {
+                new_nextcut_lead: "bg-purple-100 text-purple-700",
+                repeat_client: "bg-blue-100 text-blue-700",
+                barber_direct_client: "bg-emerald-100 text-emerald-700",
+              };
+              return (
+                <div key={type} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${colorMap[type]}`}>
+                      {COMMISSION_LABELS[type]}
+                    </span>
+                    <span className="text-xs text-slate-500">{d.count} bookings</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-heading font-bold text-emerald-600">${d.revenue.toFixed(2)}</p>
+                    <p className="text-[10px] text-slate-400">Platform: ${d.fees.toFixed(2)}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Stripe Readiness */}

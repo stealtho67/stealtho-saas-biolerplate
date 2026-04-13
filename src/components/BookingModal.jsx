@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Clock, CheckCircle2, Loader2 } from "lucide-react";
-import { getCommissionRate, calcFeesWithRate } from "@/lib/platformSettings";
+import { getCommissionRules, resolveCommissionType, calcCommission, SOURCE_TO_TYPE } from "@/lib/commissionRules";
 import { format, addDays, isBefore, startOfToday } from "date-fns";
 
 const TIME_SLOTS = [
@@ -61,8 +61,20 @@ export default function BookingModal({ open, onClose, barber, services }) {
   const handleBook = async () => {
     setLoading(true);
     const user = await base44.auth.me();
-    const rate = await getCommissionRate();
-    const fees = calcFeesWithRate(selectedService.price, rate);
+
+    // Determine customer source — check URL param for barber-direct links
+    const urlParams = new URLSearchParams(window.location.search);
+    const sourceParam = urlParams.get("source");
+    const referredByBarberId = urlParams.get("ref_barber");
+    const customerSource = sourceParam || "marketplace";
+
+    // Resolve commission type (repeat > barber-direct > new lead)
+    const commissionType = await resolveCommissionType(user.email, barber.id, customerSource);
+    const rules = await getCommissionRules();
+    const commissionRate = rules[commissionType];
+    const { platformFee, barberEarnings } = calcCommission(selectedService.price, 0, commissionRate);
+    const isRepeat = commissionType === "repeat_client";
+
     await base44.entities.Booking.create({
       client_email: user.email,
       client_name: user.full_name,
@@ -71,9 +83,15 @@ export default function BookingModal({ open, onClose, barber, services }) {
       service_id: selectedService.id,
       service_name: selectedService.service_name,
       price: selectedService.price,
-      service_price: fees.servicePrice,
-      platform_fee: fees.platformFee,
-      barber_earnings: fees.barberEarnings,
+      service_price: selectedService.price,
+      tip_amount: 0,
+      platform_fee: platformFee,
+      barber_earnings: barberEarnings,
+      commission_rate: commissionRate,
+      commission_type: commissionType,
+      customer_source: customerSource,
+      is_repeat_client: isRepeat,
+      referred_by_barber_id: referredByBarberId || undefined,
       date: format(selectedDate, "yyyy-MM-dd"),
       time: selectedTime,
       duration_minutes: selectedService.duration_minutes,

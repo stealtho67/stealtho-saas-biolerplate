@@ -1,76 +1,117 @@
 import { useState, useEffect } from "react";
-import { getCommissionRate, setCommissionRate } from "@/lib/platformSettings";
+import { getCommissionRules, saveCommissionRules, COMMISSION_LABELS, COMMISSION_DEFAULTS } from "@/lib/commissionRules";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 
-const RATES = [
-  { value: 0.10, label: "10%", desc: "Lower fee — good for growth phase" },
-  { value: 0.15, label: "15%", desc: "Standard — recommended" },
-  { value: 0.20, label: "20%", desc: "Higher fee — premium positioning" },
-];
+const RULE_DESCRIPTIONS = {
+  new_nextcut_lead: "Client discovered the barber via NextCut marketplace, search, featured placement, or campaign traffic.",
+  repeat_client: "Client has at least one prior completed & paid booking with this barber — relationship is established.",
+  barber_direct_client: "Client arrived via the barber's own referral link or direct booking link.",
+};
+
+const RULE_EXAMPLES = {
+  new_nextcut_lead: { price: 50, label: "new marketplace booking" },
+  repeat_client: { price: 50, label: "returning client" },
+  barber_direct_client: { price: 50, label: "barber's own client" },
+};
 
 export default function AdminSettings() {
-  const [currentRate, setCurrentRate] = useState(null);
-  const [selected, setSelected] = useState(null);
+  const [rules, setRules] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getCommissionRate().then((rate) => {
-      setCurrentRate(rate);
-      setSelected(rate);
-      setLoading(false);
-    });
+    getCommissionRules().then(r => { setRules(r); setDraft({ ...r }); });
   }, []);
 
   const save = async () => {
     setSaving(true);
-    await setCommissionRate(selected);
-    setCurrentRate(selected);
+    await saveCommissionRules(draft);
+    setRules({ ...draft });
     setSaving(false);
-    toast.success(`Commission rate updated to ${(selected * 100).toFixed(0)}%`);
+    toast.success("Commission rules saved.");
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin" /></div>;
+  const isDirty = draft && rules && JSON.stringify(draft) !== JSON.stringify(rules);
+
+  if (!draft) return (
+    <div className="flex justify-center items-center h-64">
+      <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
+    </div>
+  );
 
   return (
-    <div className="p-6 max-w-2xl">
-      <h1 className="font-heading font-bold text-2xl text-slate-900 mb-1">Platform Settings</h1>
-      <p className="text-sm text-slate-500 mb-6">Configure commission rates and platform behavior.</p>
-
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <h2 className="font-heading font-semibold text-slate-800 mb-1">Commission Rate</h2>
-        <p className="text-xs text-slate-500 mb-4">
-          This percentage is deducted from each booking. Barbers see their net earnings in their dashboard.
-          Currently: <strong>{(currentRate * 100).toFixed(0)}%</strong>
+    <div className="p-6 max-w-2xl space-y-6">
+      <div>
+        <h1 className="font-heading font-bold text-2xl text-slate-900">Commission Rules</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Commission is determined by how the client was acquired — not a single global rate.
+          Tips are always 100% barber's. Commission applies to service price only.
         </p>
-        <div className="space-y-3 mb-6">
-          {RATES.map((r) => (
-            <button
-              key={r.value}
-              onClick={() => setSelected(r.value)}
-              className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
-                selected === r.value
-                  ? "border-primary bg-accent"
-                  : "border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              <div>
-                <p className="font-semibold text-slate-800">{r.label}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{r.desc}</p>
-              </div>
-              {selected === r.value && <CheckCircle2 className="w-5 h-5 text-primary" />}
-            </button>
-          ))}
-        </div>
-        <div className="p-4 bg-slate-50 rounded-xl text-sm text-slate-600 mb-4">
-          <strong>Example at {(selected * 100).toFixed(0)}%:</strong> A $50 booking → platform earns ${(50 * selected).toFixed(2)}, barber earns ${(50 - 50 * selected).toFixed(2)}
-        </div>
-        <Button onClick={save} disabled={saving || selected === currentRate} className="w-full">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Commission Rate"}
-        </Button>
       </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
+        <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+        <div className="text-xs text-blue-700 space-y-1">
+          <p><strong>Priority order:</strong> Barber-direct &gt; Repeat client &gt; New NextCut lead</p>
+          <p>Commission is locked onto the booking at creation and never retroactively changed.</p>
+          <p>Cancelled and no-show bookings never generate commission.</p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {Object.keys(COMMISSION_LABELS).map((type) => {
+          const pct = draft[type] * 100;
+          const ex = RULE_EXAMPLES[type];
+          const fee = (ex.price * draft[type]).toFixed(2);
+          const earn = (ex.price - ex.price * draft[type]).toFixed(2);
+          return (
+            <div key={type} className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                      type === "new_nextcut_lead" ? "bg-purple-100 text-purple-700" :
+                      type === "repeat_client" ? "bg-blue-100 text-blue-700" :
+                      "bg-emerald-100 text-emerald-700"
+                    }`}>
+                      {COMMISSION_LABELS[type]}
+                    </span>
+                    <span className="font-heading font-bold text-slate-900">{pct.toFixed(0)}%</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-3">{RULE_DESCRIPTIONS[type]}</p>
+                  <p className="text-xs text-slate-400">
+                    Example: $50 {ex.label} → platform earns <strong>${fee}</strong>, barber earns <strong>${earn}</strong>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={pct}
+                    onChange={e => setDraft(d => ({ ...d, [type]: parseFloat(e.target.value) / 100 || 0 }))}
+                    className="w-20 text-center font-heading font-bold"
+                  />
+                  <span className="text-sm text-slate-500">%</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-500 space-y-1">
+        <p><strong>Default rates:</strong> New lead 20% · Repeat client 15% · Barber direct 10%</p>
+        <p>These defaults match industry-standard marketplace commission structures. Adjust only if needed.</p>
+      </div>
+
+      <Button onClick={save} disabled={saving || !isDirty} className="w-full">
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Commission Rules"}
+      </Button>
     </div>
   );
 }
