@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,25 @@ const SPECIALTY_SUGGESTIONS = [
 export default function BarberApplication() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [checkingExisting, setCheckingExisting] = useState(true);
+
+  // On mount: if user already has a barber profile, send them to the dashboard
+  useEffect(() => {
+    base44.auth.me().then(me => {
+      if (!me) { setCheckingExisting(false); return; }
+      if (me.role === "barber") {
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+      base44.entities.Barber.filter({ user_email: me.email }).then(existing => {
+        if (existing.length > 0) {
+          navigate("/dashboard", { replace: true });
+        } else {
+          setCheckingExisting(false);
+        }
+      });
+    }).catch(() => setCheckingExisting(false));
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -142,6 +161,14 @@ export default function BarberApplication() {
       setSubmitting(false);
     }
   };
+
+  if (checkingExisting) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (done) {
     return (

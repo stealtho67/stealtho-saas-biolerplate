@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Calendar, DollarSign, Users, Star, TrendingUp, Clock, Info, Link2, Copy, LayoutDashboard, UserCircle, Scissors, Images } from "lucide-react";
 import { COMMISSION_LABELS } from "@/lib/commissionRules";
@@ -13,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 export default function BarberDashboard() {
+  const navigate = useNavigate();
   const [barber, setBarber] = useState(null);
   const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -22,6 +24,11 @@ export default function BarberDashboard() {
 
   const loadDashboard = async () => {
     const me = await base44.auth.me();
+    // Redirect non-barbers (clients) away from this page
+    if (me && me.role !== "barber" && me.role !== "admin") {
+      navigate("/", { replace: true });
+      return;
+    }
     const barbers = await base44.entities.Barber.filter({ user_email: me.email });
     if (barbers.length === 0) { setLoading(false); return; }
     const b = barbers[0];

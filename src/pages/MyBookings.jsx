@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Calendar, Clock, MapPin, Star, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Star, Loader2, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,10 @@ export default function MyBookings() {
 
   const loadData = async () => {
     const me = await base44.auth.me();
+    if (!me) {
+      setLoading(false);
+      return;
+    }
     setUser(me);
     const isBrb = me?.role === "barber";
     setIsBarber(isBrb);
@@ -92,6 +96,16 @@ export default function MyBookings() {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 gap-4">
+        <Calendar className="w-12 h-12 text-muted-foreground/30" />
+        <h2 className="font-heading font-bold text-xl">Sign in to view your bookings</h2>
+        <Button onClick={() => base44.auth.redirectToLogin(window.location.href)}>Sign In</Button>
       </div>
     );
   }
@@ -186,7 +200,16 @@ export default function MyBookings() {
 
         <TabsContent value="upcoming" className="mt-4 space-y-3">
           {upcoming.length === 0 ? (
-            <EmptyState icon={Calendar} title="No upcoming bookings" description={isBarber ? "New appointments will appear here" : "Browse barbers to book your next cut"} />
+            <div className="space-y-4">
+              <EmptyState icon={Calendar} title="No upcoming bookings" description={isBarber ? "New appointments will appear here" : "Browse barbers to book your next cut"} />
+              {!isBarber && (
+                <div className="text-center">
+                  <Link to="/explore">
+                    <Button className="gap-2"><Search className="w-4 h-4" /> Find a Barber</Button>
+                  </Link>
+                </div>
+              )}
+            </div>
           ) : (
             upcoming.map(b => <BookingCard key={b.id} booking={b} />)
           )}

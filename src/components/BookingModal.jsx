@@ -60,55 +60,64 @@ export default function BookingModal({ open, onClose, barber, services }) {
 
   const handleBook = async () => {
     setLoading(true);
-    const user = await base44.auth.me();
+    try {
+      const user = await base44.auth.me();
+      if (!user) {
+        base44.auth.redirectToLogin(window.location.href);
+        return;
+      }
 
-    // Determine customer source — check URL param for barber-direct links
-    const urlParams = new URLSearchParams(window.location.search);
-    const sourceParam = urlParams.get("source");
-    const referredByBarberId = urlParams.get("ref_barber");
-    const customerSource = sourceParam || "marketplace";
+      // Determine customer source — check URL param for barber-direct links
+      const urlParams = new URLSearchParams(window.location.search);
+      const sourceParam = urlParams.get("source");
+      const referredByBarberId = urlParams.get("ref_barber");
+      const customerSource = sourceParam || "marketplace";
 
-    // Resolve commission type (repeat > barber-direct > new lead)
-    const commissionType = await resolveCommissionType(user.email, barber.id, customerSource);
-    const rules = await getCommissionRules();
-    const commissionRate = rules[commissionType];
-    const { platformFee, barberEarnings } = calcCommission(selectedService.price, 0, commissionRate);
-    const isRepeat = commissionType === "repeat_client";
+      // Resolve commission type (repeat > barber-direct > new lead)
+      const commissionType = await resolveCommissionType(user.email, barber.id, customerSource);
+      const rules = await getCommissionRules();
+      const commissionRate = rules[commissionType];
+      const { platformFee, barberEarnings } = calcCommission(selectedService.price, 0, commissionRate);
+      const isRepeat = commissionType === "repeat_client";
 
-    await base44.entities.Booking.create({
-      client_email: user.email,
-      client_name: user.full_name,
-      barber_id: barber.id,
-      barber_name: barber.display_name,
-      service_id: selectedService.id,
-      service_name: selectedService.service_name,
-      price: selectedService.price,
-      service_price: selectedService.price,
-      tip_amount: 0,
-      platform_fee: platformFee,
-      barber_earnings: barberEarnings,
-      commission_rate: commissionRate,
-      commission_type: commissionType,
-      customer_source: customerSource,
-      is_repeat_client: isRepeat,
-      referred_by_barber_id: referredByBarberId || undefined,
-      date: format(selectedDate, "yyyy-MM-dd"),
-      time: selectedTime,
-      duration_minutes: selectedService.duration_minutes,
-      status: "confirmed",
-      payment_status: "unpaid",
-      notes: notes
-    });
-    
-    // Send confirmation email
-    await base44.integrations.Core.SendEmail({
-      to: user.email,
-      subject: `Booking Confirmed - ${barber.display_name}`,
-      body: `Your ${selectedService.service_name} with ${barber.display_name} is confirmed for ${format(selectedDate, "MMMM d, yyyy")} at ${selectedTime}. Price: $${selectedService.price}.`
-    });
+      await base44.entities.Booking.create({
+        client_email: user.email,
+        client_name: user.full_name,
+        barber_id: barber.id,
+        barber_name: barber.display_name,
+        service_id: selectedService.id,
+        service_name: selectedService.service_name,
+        price: selectedService.price,
+        service_price: selectedService.price,
+        tip_amount: 0,
+        platform_fee: platformFee,
+        barber_earnings: barberEarnings,
+        commission_rate: commissionRate,
+        commission_type: commissionType,
+        customer_source: customerSource,
+        is_repeat_client: isRepeat,
+        referred_by_barber_id: referredByBarberId || undefined,
+        date: format(selectedDate, "yyyy-MM-dd"),
+        time: selectedTime,
+        duration_minutes: selectedService.duration_minutes,
+        status: "confirmed",
+        payment_status: "unpaid",
+        notes: notes
+      });
 
-    setLoading(false);
-    setSuccess(true);
+      // Send confirmation email — fire and forget, never block booking
+      base44.integrations.Core.SendEmail({
+        to: user.email,
+        subject: `Booking Confirmed — ${barber.display_name}`,
+        body: `Your ${selectedService.service_name} with ${barber.display_name} is confirmed for ${format(selectedDate, "MMMM d, yyyy")} at ${selectedTime}.\n\nPrice: $${selectedService.price}\n\nSee you soon!`
+      }).catch(() => {});
+
+      setSuccess(true);
+    } catch (err) {
+      console.error("Booking error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const availableSlots = getAvailableSlots();

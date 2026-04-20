@@ -25,8 +25,12 @@ export default function BarberProfile() {
 
   const loadData = async () => {
     const barbers = await base44.entities.Barber.filter({ id });
-    if (barbers.length === 0) return;
-    setBarber(barbers[0]);
+    if (barbers.length === 0 || barbers[0].status === "suspended") {
+      setLoading(false);
+      return;
+    }
+    const b = barbers[0];
+    setBarber(b);
 
     const [svc, rev] = await Promise.all([
       base44.entities.Service.filter({ barber_id: id }),
@@ -47,9 +51,10 @@ export default function BarberProfile() {
 
   if (!barber) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 gap-3">
         <h2 className="font-heading font-bold text-xl">Barber not found</h2>
-        <Link to="/explore"><Button className="mt-4">Browse Barbers</Button></Link>
+        <p className="text-muted-foreground text-sm">This barber may not be available.</p>
+        <Link to="/explore"><Button className="mt-2">Browse Barbers</Button></Link>
       </div>
     );
   }

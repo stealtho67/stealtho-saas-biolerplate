@@ -16,11 +16,15 @@ export default function Layout() {
   }, []);
 
   const loadUser = async () => {
-    const me = await base44.auth.me();
-    setUser(me);
-    if (me?.role === "barber") {
-      const barbers = await base44.entities.Barber.filter({ user_email: me.email });
-      if (barbers.length > 0) setBarberProfile(barbers[0]);
+    try {
+      const me = await base44.auth.me();
+      setUser(me);
+      if (me?.role === "barber") {
+        const barbers = await base44.entities.Barber.filter({ user_email: me.email });
+        if (barbers.length > 0) setBarberProfile(barbers[0]);
+      }
+    } catch (e) {
+      // Not logged in — still render public layout
     }
   };
 

@@ -25,14 +25,19 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then((me) => {
-      if (!me || me.role !== "admin") {
-        navigate("/");
-      } else {
-        setUser(me);
-      }
-      setChecking(false);
-    });
+    base44.auth.me()
+      .then((me) => {
+        if (!me || me.role !== "admin") {
+          navigate("/", { replace: true });
+        } else {
+          setUser(me);
+        }
+        setChecking(false);
+      })
+      .catch(() => {
+        navigate("/", { replace: true });
+        setChecking(false);
+      });
   }, []);
 
   if (checking) {

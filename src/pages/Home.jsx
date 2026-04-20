@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Search, ArrowRight, Scissors, Star, Shield, Zap, TrendingUp } from "lucide-react";
+import { Search, ArrowRight, Scissors, Star, Shield, Zap, TrendingUp, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BarberCard from "../components/BarberCard";
 
@@ -10,17 +10,22 @@ export default function Home() {
   const [topBarbers, setTopBarbers] = useState([]);
   const [availableNow, setAvailableNow] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     loadBarbers();
   }, []);
 
   const loadBarbers = async () => {
-    const allBarbers = await base44.entities.Barber.filter({ status: "active" });
+    const [allBarbers] = await Promise.all([
+      base44.entities.Barber.filter({ status: "active" }),
+    ]);
     setFeaturedBarbers(allBarbers.filter(b => b.is_featured).slice(0, 4));
     setTopBarbers([...allBarbers].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 4));
     setAvailableNow(allBarbers.filter(b => b.is_available_now).slice(0, 4));
     setLoading(false);
+    // Non-blocking role check for personalized CTAs
+    base44.auth.me().then(me => setUserRole(me?.role || "client")).catch(() => setUserRole("client"));
   };
 
   return (
@@ -49,9 +54,9 @@ export default function Home() {
                   <Search className="w-4 h-4" /> Find a Barber
                 </Button>
               </Link>
-              <Link to="/profile">
+              <Link to="/apply">
                 <Button variant="outline" size="lg" className="gap-2 text-base px-8 h-12 rounded-xl">
-                  I'm a Barber <ArrowRight className="w-4 h-4" />
+                  Apply as Barber <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
             </div>
@@ -120,6 +125,48 @@ export default function Home() {
           barbers={topBarbers}
           linkTo="/explore?sort=rating"
         />
+      )}
+
+      {/* Empty marketplace state */}
+      {!loading && topBarbers.length === 0 && (
+        <section className="max-w-6xl mx-auto px-4 py-12 text-center">
+          <div className="bg-card border border-border rounded-2xl p-10 max-w-lg mx-auto">
+            <Scissors className="w-10 h-10 text-muted-foreground/30 mx-auto mb-4" />
+            <h2 className="font-heading font-bold text-xl mb-2">Barbers Coming Soon</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              We're onboarding our first barbers. Be among the first to join NextCut!
+            </p>
+            <Link to="/apply">
+              <Button className="gap-2">Apply as a Barber <ArrowRight className="w-4 h-4" /></Button>
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Barber CTA — shown to non-barbers */}
+      {!loading && userRole !== "barber" && userRole !== "admin" && (
+        <section className="max-w-6xl mx-auto px-4 py-10">
+          <div className="bg-gradient-to-br from-primary/10 to-accent/30 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h2 className="font-heading font-bold text-xl md:text-2xl mb-2">Are you a barber?</h2>
+              <p className="text-muted-foreground text-sm max-w-md">
+                Join NextCut and grow your client base. Set your own schedule, manage bookings, and get paid directly.
+              </p>
+              <ul className="mt-3 space-y-1">
+                {["Free to apply", "Keep 80-90% of every booking", "Build your portfolio"].map(item => (
+                  <li key={item} className="text-sm flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" /> {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Link to="/apply" className="shrink-0">
+              <Button size="lg" className="gap-2 h-12 px-8 rounded-xl shadow-lg shadow-primary/20">
+                Apply as a Barber <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+        </section>
       )}
 
       {loading && (
