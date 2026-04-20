@@ -72,21 +72,42 @@ export default function BarberManagement() {
                             <MapPin className="w-3 h-3" /> {b.city}{b.neighborhood ? `, ${b.neighborhood}` : ""}
                           </p>
                           <p className="text-xs text-slate-500 mt-0.5">{b.user_email}</p>
+                          {b.years_experience && (
+                            <p className="text-xs text-slate-500 mt-0.5">{b.years_experience} yrs experience</p>
+                          )}
                         </div>
-                        <Badge className="bg-amber-100 text-amber-700 border-0">Pending</Badge>
+                        <Badge className="bg-amber-100 text-amber-700 border-0">Pending Review</Badge>
                       </div>
                       {b.bio && <p className="text-xs text-slate-500 mt-2 line-clamp-2">{b.bio}</p>}
-                      {b.license_image && (
-                        <a href={b.license_image} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 mt-2 text-xs text-primary hover:underline">
-                          <Eye className="w-3.5 h-3.5" /> View License
-                        </a>
+                      {b.specialties?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {b.specialties.slice(0, 5).map(s => (
+                            <span key={s} className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{s}</span>
+                          ))}
+                          {b.specialties.length > 5 && <span className="text-[10px] text-slate-400">+{b.specialties.length - 5} more</span>}
+                        </div>
                       )}
+                      <div className="flex items-center gap-3 mt-2">
+                        {b.license_image ? (
+                          <a href={b.license_image} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
+                            <Eye className="w-3.5 h-3.5" /> View License
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400">No license uploaded</span>
+                        )}
+                        {b.profile_photo && (
+                          <a href={b.profile_photo} target="_blank" rel="noreferrer" className="text-xs text-slate-500 hover:underline">View Photo</a>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Applied: {b.created_date ? new Date(b.created_date).toLocaleDateString() : "—"}
+                      </p>
                       <div className="flex gap-2 mt-3">
                         <Button
                           size="sm"
                           className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1.5"
                           disabled={actionLoading === b.id}
-                          onClick={() => updateBarber(b.id, { status: "active", license_verified: true }, "Barber approved!")}
+                          onClick={() => updateBarber(b.id, { status: "active", license_verified: !!b.license_image }, "Barber approved!")}
                         >
                           {actionLoading === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                           Approve

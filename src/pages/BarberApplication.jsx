@@ -44,6 +44,7 @@ export default function BarberApplication() {
   const [newSpecialty, setNewSpecialty] = useState("");
   const [licenseImage, setLicenseImage] = useState("");
   const [licenseUploading, setLicenseUploading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const uploadProfilePhoto = async (e) => {
     const file = e.target.files?.[0];
@@ -85,37 +86,61 @@ export default function BarberApplication() {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return; // prevent double-submit
     setSubmitting(true);
-    const me = await base44.auth.me();
-    await base44.auth.updateMe({ role: "barber" });
-    await base44.entities.Barber.create({
-      user_email: me.email,
-      display_name: displayName,
-      bio,
-      city,
-      neighborhood,
-      years_experience: yearsExp ? parseInt(yearsExp) : undefined,
-      specialties,
-      profile_photo: profilePhoto,
-      license_image: licenseImage,
-      license_verified: false,
-      status: "pending",
-      rating: 0,
-      total_reviews: 0,
-      total_bookings: 0,
-      is_available_now: false,
-      is_featured: false,
-    });
-    // Notify admin via email (best effort)
+    setSubmitError("");
+
     try {
-      await base44.integrations.Core.SendEmail({
+      const me = await base44.auth.me();
+
+      // Guard: prevent duplicate barber records for same email
+      const existing = await base44.entities.Barber.filter({ user_email: me.email });
+      if (existing.length > 0) {
+        setSubmitError("You already have a barber application on file. Check your dashboard.");
+        setSubmitting(false);
+        return;
+      }
+
+      // 1. Create the barber record first (most critical step)
+      await base44.entities.Barber.create({
+        user_email: me.email,
+        display_name: displayName,
+        bio,
+        city,
+        neighborhood,
+        years_experience: yearsExp ? parseInt(yearsExp) : undefined,
+        specialties,
+        profile_photo: profilePhoto || "",
+        license_image: licenseImage || "",
+        license_verified: false,
+        status: "pending",
+        rating: 0,
+        total_reviews: 0,
+        total_bookings: 0,
+        is_available_now: false,
+        is_featured: false,
+        stripe_status: "not_connected",
+        stripe_onboarding_complete: false,
+        payouts_enabled: false,
+      });
+
+      // 2. Update role — do this AFTER barber record is saved
+      await base44.auth.updateMe({ role: "barber" });
+
+      // 3. Send confirmation email — fire and forget, never block submit
+      base44.integrations.Core.SendEmail({
         to: me.email,
         subject: "NextCut — Application Received!",
         body: `Hi ${displayName},\n\nWe've received your barber application on NextCut. Our team will review it and get back to you within 1-2 business days.\n\nThanks for joining!\n— The NextCut Team`
-      });
-    } catch {}
-    setSubmitting(false);
-    setDone(true);
+      }).catch(() => {}); // intentionally non-blocking
+
+      setDone(true);
+    } catch (err) {
+      console.error("Barber application submit error:", err);
+      setSubmitError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (done) {
@@ -411,7 +436,7 @@ export default function BarberApplication() {
         {/* Navigation */}
         <div className="flex gap-3 mt-10">
           {step > 1 && (
-            <Button variant="outline" onClick={() => setStep(s => s - 1)} className="flex-1 h-12 rounded-xl">
+            <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={submitting} className="flex-1 h-12 rounded-xl">
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>
           )}
@@ -429,10 +454,15 @@ export default function BarberApplication() {
               disabled={submitting}
               className="flex-1 h-12 rounded-xl shadow-lg shadow-primary/20"
             >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Application 🎉"}
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Submitting...</> : "Submit Application 🎉"}
             </Button>
           )}
         </div>
+        {submitError && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-center">
+            {submitError}
+          </div>
+        )}
       </div>
     </div>
   );
