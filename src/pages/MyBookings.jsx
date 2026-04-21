@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
-import { Calendar, Clock, MapPin, Star, Loader2, Search, LayoutDashboard } from "lucide-react";
+import { Calendar, Clock, Star, Loader2, Search, LayoutDashboard, CreditCard } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { format, isPast, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
 import StarRating from "../components/StarRating";
 import EmptyState from "../components/EmptyState";
+import CollectPaymentModal from "../components/barber/CollectPaymentModal";
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -21,6 +22,7 @@ export default function MyBookings() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [paymentModal, setPaymentModal] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -181,9 +183,11 @@ export default function MyBookings() {
           </Button>
         )}
         {isBarber && booking.status === "completed" && booking.payment_status !== "paid" && (
-          <Button size="sm" className="h-8 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => markPaid(booking)}>
-            Mark Paid
-          </Button>
+          <>
+            <Button size="sm" className="h-8 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white gap-1" onClick={() => setPaymentModal(booking)}>
+              <CreditCard className="w-3 h-3" /> Collect Payment
+            </Button>
+          </>
         )}
         {/* Only the booking owner (client) or barber can cancel, and only upcoming bookings */}
         {booking.status === "confirmed" && !isPast(parseISO(booking.date + "T" + (booking.time || "00:00"))) && (
@@ -266,6 +270,16 @@ export default function MyBookings() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Collect Payment Modal */}
+      {paymentModal && (
+        <CollectPaymentModal
+          booking={paymentModal}
+          open={!!paymentModal}
+          onClose={() => setPaymentModal(null)}
+          onMarkPaid={(booking) => { markPaid(booking); setPaymentModal(null); }}
+        />
+      )}
 
       {/* Review Modal */}
       <Dialog open={!!reviewModal} onOpenChange={() => setReviewModal(null)}>
