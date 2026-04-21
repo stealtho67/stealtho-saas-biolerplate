@@ -14,21 +14,23 @@ const STATUS_CONFIG = {
     banner: "bg-slate-50 border-slate-200",
     icon: AlertCircle,
     iconColor: "text-slate-400",
-    headline: "Connect Stripe to receive payouts",
-    body: "Stripe is used only for payout delivery and identity verification — your service prices are set in your NextCut Services tab, not in Stripe. Connect to start receiving online payments.",
+    headline: "Connect Stripe to receive online payments",
+    body: "NextCut uses Stripe to verify your identity and deposit earnings directly into your bank account. Stripe does not control your service prices — those are set here in your Services tab. Clicking 'Connect Stripe' will open Stripe's secure hosted form where you'll enter your banking and identity details.",
     cta: "Connect Stripe",
     ctaVariant: "default",
+    nextStep: "You'll be taken to Stripe's secure onboarding page. Complete your identity and banking info, then return here.",
   },
   onboarding_required: {
-    label: "Onboarding Required",
+    label: "Setup Incomplete",
     badge: "bg-orange-100 text-orange-700 border-orange-200",
     banner: "bg-orange-50 border-orange-200",
     icon: AlertCircle,
     iconColor: "text-orange-500",
-    headline: "Complete Stripe setup to enable payouts",
-    body: "Finish Stripe's identity and banking steps to enable payout delivery. Your NextCut service prices are not affected — they're managed in your Services tab.",
+    headline: "Finish your Stripe setup to get paid",
+    body: "You started Stripe onboarding but didn't complete it. Click below to return to Stripe and finish entering your banking and identity information. Your NextCut service prices are not affected.",
     cta: "Continue Stripe Setup",
     ctaVariant: "default",
+    nextStep: "Return to Stripe's onboarding page and complete all required steps.",
   },
   onboarding_in_progress: {
     label: "Setup In Progress",
@@ -36,10 +38,23 @@ const STATUS_CONFIG = {
     banner: "bg-amber-50 border-amber-200",
     icon: Clock,
     iconColor: "text-amber-500",
-    headline: "Stripe setup in progress",
-    body: "Complete the Stripe onboarding steps to unlock payouts. Once done, click 'Check If Complete' to sync your status. Service pricing remains controlled by NextCut.",
-    cta: "Resume Stripe Setup",
+    headline: "Stripe setup is in progress",
+    body: "You've been redirected to Stripe's onboarding form. Once you've completed all steps on Stripe's side, click 'Check Status' below so NextCut can confirm your payouts are enabled.",
+    cta: "Resume on Stripe",
     ctaVariant: "outline",
+    nextStep: "Click 'Check Status' after finishing Stripe's onboarding steps to activate payouts.",
+  },
+  verification_needed: {
+    label: "Verification Needed",
+    badge: "bg-red-100 text-red-700 border-red-200",
+    banner: "bg-red-50 border-red-200",
+    icon: AlertCircle,
+    iconColor: "text-red-500",
+    headline: "Stripe needs more information",
+    body: "Stripe has flagged that additional verification is required before payouts can be enabled. This is common and usually involves uploading an ID or confirming banking details. Click below to return to Stripe and resolve the outstanding items.",
+    cta: "Resolve on Stripe",
+    ctaVariant: "default",
+    nextStep: "Complete the outstanding verification items on Stripe, then click 'Check Status'.",
   },
   active: {
     label: "Payouts Enabled",
@@ -47,9 +62,10 @@ const STATUS_CONFIG = {
     banner: "bg-emerald-50 border-emerald-200",
     icon: CheckCircle2,
     iconColor: "text-emerald-500",
-    headline: "You're payout-ready!",
-    body: "Your Stripe account is connected for payout delivery. Client payments are processed at the prices you set in your NextCut Services tab — Stripe does not control your pricing.",
+    headline: "You're set up and ready to receive payouts!",
+    body: "Your Stripe account is verified and connected. When clients pay online, NextCut processes the payment and deposits your earnings directly to your bank via Stripe. Your service prices are always set here in NextCut — not in Stripe.",
     cta: null,
+    nextStep: null,
   },
 };
 
@@ -153,6 +169,11 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground">{cfg.headline}</p>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{cfg.body}</p>
+            {cfg.nextStep && (
+              <p className="text-xs font-medium text-foreground mt-2 pt-2 border-t border-current/10">
+                ➜ <span className="opacity-70">{cfg.nextStep}</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -175,7 +196,7 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
               {connecting ? "Opening Stripe..." : cfg.cta}
             </Button>
           )}
-          {stripeStatus === "onboarding_in_progress" && (
+          {(stripeStatus === "onboarding_in_progress" || stripeStatus === "verification_needed") && (
             <Button
               variant="outline"
               onClick={handleSyncStatus}
@@ -183,7 +204,7 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
               className="gap-2"
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-              {syncing ? "Checking..." : "Check If Complete"}
+              {syncing ? "Checking..." : "Check Status"}
             </Button>
           )}
         </div>

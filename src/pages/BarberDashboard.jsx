@@ -40,8 +40,14 @@ export default function BarberDashboard() {
   // Auto-sync Stripe status when returning from Stripe onboarding
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get("stripe") === "complete") {
+    const stripeParam = params.get("stripe");
+    if (stripeParam === "complete" || stripeParam === "refresh") {
       window.history.replaceState({}, "", "/dashboard");
+      setActiveTab("payouts");
+      if (stripeParam === "refresh") {
+        toast.info("Your Stripe session expired. Click 'Resume on Stripe' to continue setup.");
+        return;
+      }
       setTimeout(async () => {
         try {
           const me = await base44.auth.me();
@@ -58,6 +64,10 @@ export default function BarberDashboard() {
               );
               if (res.data.status === "active") {
                 toast.success("🎉 Stripe connected! Payouts are now enabled.");
+              } else if (res.data.status === "verification_needed") {
+                toast.warning("Stripe needs more info before payouts can be enabled. Check the Payouts tab.");
+              } else {
+                toast.info("Stripe setup received. Check the Payouts tab to confirm your status.");
               }
             }
           }

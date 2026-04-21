@@ -76,7 +76,15 @@ Deno.serve(async (req) => {
       const account = await stripe.accounts.retrieve(barbers[0].stripe_account_id);
       const payoutsEnabled = account.payouts_enabled;
       const chargesEnabled = account.charges_enabled;
-      const newStatus = payoutsEnabled && chargesEnabled ? 'active' : 'onboarding_in_progress';
+      const hasRequirements = account.requirements?.currently_due?.length > 0 || account.requirements?.past_due?.length > 0;
+      let newStatus;
+      if (payoutsEnabled && chargesEnabled) {
+        newStatus = 'active';
+      } else if (hasRequirements) {
+        newStatus = 'verification_needed';
+      } else {
+        newStatus = 'onboarding_in_progress';
+      }
 
       await base44.asServiceRole.entities.Barber.update(barber_id, {
         stripe_status: newStatus,
