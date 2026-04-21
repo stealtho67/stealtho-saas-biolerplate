@@ -131,13 +131,22 @@ export default function Layout() {
                 {item.label}
               </Link>
             ))}
-            <button
-              onClick={() => base44.auth.logout()}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-destructive mt-4"
-            >
-              <LogOut className="w-5 h-5" />
-              Sign Out
-            </button>
+            {user ? (
+              <button
+                onClick={() => base44.auth.logout()}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-destructive mt-4"
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </button>
+            ) : (
+              <button
+                onClick={() => { base44.auth.redirectToLogin(window.location.href); setMobileMenuOpen(false); }}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-primary mt-4"
+              >
+                Sign In
+              </button>
+            )}
           </nav>
         </div>
       )}
