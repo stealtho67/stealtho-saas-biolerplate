@@ -7,7 +7,8 @@
 export const PLATFORM_FEE_PERCENT = 0.15; // 15%
 
 // Publishable key — safe for frontend (never use secret key here)
-export const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "pk_live_51TJQ3IF8v2NJFxq5aax8YXqJbiXEumsMe0tXWEJx1rPkD0srqIkFylGDyEkah799vp2spPkaVwG1hoYdpHnRc4dN000lhroTcW";
+// Set VITE_STRIPE_PUBLISHABLE_KEY in your Base44 environment variables
+export const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
 
 export const STRIPE_ACTIVE = !!STRIPE_PUBLISHABLE_KEY;
 
