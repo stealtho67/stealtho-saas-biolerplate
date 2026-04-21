@@ -30,16 +30,13 @@ export default function BarberApplication() {
   const [step, setStep] = useState(1);
   const [checkingExisting, setCheckingExisting] = useState(true);
 
-  // On mount: if user already has a barber profile, send them to the dashboard
+  // On mount: if user already has a barber profile OR barber role, send them to dashboard
   useEffect(() => {
     base44.auth.me().then(me => {
       if (!me) { setCheckingExisting(false); return; }
-      if (me.role === "barber") {
-        navigate("/dashboard", { replace: true });
-        return;
-      }
+      // Check barber record first (most reliable — role field can lag)
       base44.entities.Barber.filter({ user_email: me.email }).then(existing => {
-        if (existing.length > 0) {
+        if (existing.length > 0 || me.role === "barber") {
           navigate("/dashboard", { replace: true });
         } else {
           setCheckingExisting(false);

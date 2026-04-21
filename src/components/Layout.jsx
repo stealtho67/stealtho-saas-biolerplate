@@ -19,7 +19,8 @@ export default function Layout() {
     try {
       const me = await base44.auth.me();
       setUser(me);
-      if (me?.role === "barber") {
+      // Check for barber profile regardless of role — role update can lag or fail
+      if (me?.email) {
         const barbers = await base44.entities.Barber.filter({ user_email: me.email });
         if (barbers.length > 0) setBarberProfile(barbers[0]);
       }
@@ -29,7 +30,8 @@ export default function Layout() {
   };
 
   const isAdmin = user?.role === "admin";
-  const isBarber = user?.role === "barber";
+  // Barber = explicit role OR has a barber record linked to their account
+  const isBarber = user?.role === "barber" || !!barberProfile;
   const isActive = (path) => location.pathname === path;
 
   const navItems = isAdmin

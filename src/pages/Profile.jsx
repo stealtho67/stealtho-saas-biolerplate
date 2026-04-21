@@ -43,14 +43,14 @@ export default function Profile() {
   const loadProfile = async () => {
     const me = await base44.auth.me();
     setUser(me);
-    const isBrb = me?.role === "barber";
-    setIsBarber(isBrb);
 
-    if (isBrb) {
+    // Always check for a linked barber record — role update can lag after application submit
+    if (me?.email) {
       const barbers = await base44.entities.Barber.filter({ user_email: me.email });
       if (barbers.length > 0) {
         const b = barbers[0];
         setBarber(b);
+        setIsBarber(true);
         setDisplayName(b.display_name || "");
         setBio(b.bio || "");
         setCity(b.city || "");
@@ -63,6 +63,9 @@ export default function Profile() {
 
         const svc = await base44.entities.Service.filter({ barber_id: b.id });
         setServices(svc);
+      } else {
+        // No barber record — treat as client (regardless of role field)
+        setIsBarber(me?.role === "barber");
       }
     }
     setLoading(false);

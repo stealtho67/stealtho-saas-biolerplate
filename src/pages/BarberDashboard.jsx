@@ -70,11 +70,18 @@ export default function BarberDashboard() {
 
   const loadDashboard = async () => {
     const me = await base44.auth.me();
-    if (me && me.role !== "barber" && me.role !== "admin") {
+    if (!me) { navigate("/", { replace: true }); return; }
+
+    const barbers = await base44.entities.Barber.filter({ user_email: me.email });
+
+    // Allow access if they have a barber record OR are barber/admin role
+    const hasBarberRecord = barbers.length > 0;
+    const hasBarberRole = me.role === "barber" || me.role === "admin";
+    if (!hasBarberRecord && !hasBarberRole) {
       navigate("/", { replace: true });
       return;
     }
-    const barbers = await base44.entities.Barber.filter({ user_email: me.email });
+
     if (barbers.length === 0) { setLoading(false); return; }
     const b = barbers[0];
     setBarber(b);
