@@ -35,7 +35,7 @@ export default function BarberManagement() {
         base44.integrations.Core.SendEmail({
           to: barber.user_email,
           subject: "NextCut — You're Approved! 🎉",
-          body: `Hi ${barber.display_name},\n\nGreat news! Your NextCut barber application has been approved. You are now visible on the marketplace and can start receiving bookings.\n\nComplete your profile and connect Stripe to start getting paid:\nhttps://nextcut.app/dashboard\n\nWelcome to the team!\n— The NextCut Team`
+          body: `Hi ${barber.display_name},\n\nGreat news! Your NextCut barber application has been approved. You are now visible on the marketplace and can start receiving bookings.\n\nComplete your profile and connect Stripe to start getting paid:\n${window.location.origin}/dashboard\n\nWelcome to the team!\n— The NextCut Team`
         }).catch(() => {});
       }
     }

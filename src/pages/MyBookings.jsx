@@ -67,6 +67,13 @@ export default function MyBookings() {
 
   const submitReview = async () => {
     setSubmitting(true);
+    // Prevent duplicate reviews for the same booking
+    const existing = await base44.entities.Review.filter({ booking_id: reviewModal.id, client_email: user.email });
+    if (existing.length > 0) {
+      setReviewModal(null);
+      setSubmitting(false);
+      return;
+    }
     await base44.entities.Review.create({
       client_email: user.email,
       client_name: user.full_name,
@@ -160,7 +167,8 @@ export default function MyBookings() {
             Mark Paid
           </Button>
         )}
-        {booking.status === "confirmed" && (
+        {/* Only the booking owner (client) or barber can cancel, and only upcoming bookings */}
+        {booking.status === "confirmed" && !isPast(parseISO(booking.date + "T" + (booking.time || "00:00"))) && (
           <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg text-destructive" onClick={() => updateStatus(booking.id, "cancelled")}>
             Cancel
           </Button>

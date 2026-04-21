@@ -25,7 +25,8 @@ export default function BarberProfile() {
 
   const loadData = async () => {
     const barbers = await base44.entities.Barber.filter({ id });
-    if (barbers.length === 0 || barbers[0].status === "suspended") {
+    // Block access to suspended OR pending barbers (pending = not yet approved)
+    if (barbers.length === 0 || barbers[0].status !== "active") {
       setLoading(false);
       return;
     }
