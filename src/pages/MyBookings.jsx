@@ -95,8 +95,9 @@ export default function MyBookings() {
     setReviewComment("");
   };
 
-  const upcoming = bookings.filter(b => b.status === "confirmed" && !isPast(parseISO(b.date + "T" + b.time)));
-  const past = bookings.filter(b => b.status === "completed" || (b.status === "confirmed" && isPast(parseISO(b.date + "T" + b.time))));
+  const safeIsPast = (b) => { try { return isPast(parseISO(b.date + "T" + (b.time || "00:00"))); } catch { return false; } };
+  const upcoming = bookings.filter(b => b.status === "confirmed" && !safeIsPast(b));
+  const past = bookings.filter(b => b.status === "completed" || (b.status === "confirmed" && safeIsPast(b)));
   const cancelled = bookings.filter(b => b.status === "cancelled");
 
   if (loading) {
