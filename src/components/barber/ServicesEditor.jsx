@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 const CATEGORIES = ["haircut", "beard", "combo", "styling", "color", "other"];
 
-export default function ServicesEditor({ barberId, initialServices }) {
+export default function ServicesEditor({ barberId, initialServices, onServicesChange }) {
   const [services, setServices] = useState(initialServices || []);
   const [form, setForm] = useState({ service_name: "", price: "", duration_minutes: "30", description: "", category: "haircut" });
   const [adding, setAdding] = useState(false);
@@ -26,7 +26,11 @@ export default function ServicesEditor({ barberId, initialServices }) {
       description: form.description,
       category: form.category,
     });
-    setServices(prev => [...prev, created]);
+    setServices(prev => {
+      const updated = [...prev, created];
+      onServicesChange?.(updated);
+      return updated;
+    });
     setForm({ service_name: "", price: "", duration_minutes: "30", description: "", category: "haircut" });
     setAdding(false);
     toast.success("Service added!");
@@ -35,7 +39,11 @@ export default function ServicesEditor({ barberId, initialServices }) {
   const deleteService = async (id) => {
     setDeleting(id);
     await base44.entities.Service.delete(id);
-    setServices(prev => prev.filter(s => s.id !== id));
+    setServices(prev => {
+      const updated = prev.filter(s => s.id !== id);
+      onServicesChange?.(updated);
+      return updated;
+    });
     setDeleting(null);
     toast.success("Service removed");
   };
