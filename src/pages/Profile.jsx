@@ -8,9 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
-import { User, Scissors, Upload, Loader2, BadgeCheck, Plus, X, Trash2, Shield, Zap } from "lucide-react";
+import { User, Scissors, Upload, Loader2, BadgeCheck, Plus, X, Trash2, Shield, Zap, LayoutDashboard } from "lucide-react";
 import { stripeStatusInfo } from "@/lib/stripeConfig";
 import { toast } from "sonner";
+import BarberProfileTab from "@/components/barber/BarberProfileTab";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -198,13 +199,21 @@ export default function Profile() {
         </span>
       </div>
 
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue="dashboard">
         <TabsList className="w-full bg-secondary rounded-xl h-11">
+          <TabsTrigger value="dashboard" className="flex-1 rounded-lg flex items-center gap-1.5">
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Dashboard</span>
+          </TabsTrigger>
           <TabsTrigger value="profile" className="flex-1 rounded-lg">Profile</TabsTrigger>
           <TabsTrigger value="services" className="flex-1 rounded-lg">Services</TabsTrigger>
           <TabsTrigger value="portfolio" className="flex-1 rounded-lg">Portfolio</TabsTrigger>
           <TabsTrigger value="verification" className="flex-1 rounded-lg">Verify</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard" className="mt-4">
+          <BarberProfileTab barber={barber} services={services} />
+        </TabsContent>
 
         <TabsContent value="profile" className="mt-4 space-y-4">
           <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
