@@ -11,6 +11,7 @@ export default function Home() {
   const [availableNow, setAvailableNow] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
+  const [stats, setStats] = useState({ barbers: 0, cities: 0 });
 
   useEffect(() => {
     loadBarbers();
@@ -23,8 +24,9 @@ export default function Home() {
     setFeaturedBarbers(allBarbers.filter(b => b.is_featured).slice(0, 4));
     setTopBarbers([...allBarbers].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 4));
     setAvailableNow(allBarbers.filter(b => b.is_available_now).slice(0, 4));
+    const uniqueCities = new Set(allBarbers.map(b => b.city).filter(Boolean));
+    setStats({ barbers: allBarbers.length, cities: uniqueCities.size });
     setLoading(false);
-    // Non-blocking role check for personalized CTAs
     base44.auth.me().then(me => setUserRole(me?.role || "client")).catch(() => setUserRole("client"));
   };
 
@@ -62,19 +64,20 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-12 max-w-md">
-            {[
-              { label: "Licensed Barbers", value: "100+" },
-              { label: "Happy Clients", value: "5K+" },
-              { label: "Cities", value: "12" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="font-heading font-bold text-2xl md:text-3xl">{stat.value}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+          {/* Stats — live data */}
+          {!loading && stats.barbers > 0 && (
+            <div className="grid grid-cols-2 gap-6 mt-12 max-w-xs">
+              {[
+                { label: "Active Barbers", value: stats.barbers },
+                { label: "Cities", value: stats.cities || 1 },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center">
+                  <div className="font-heading font-bold text-2xl md:text-3xl">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
