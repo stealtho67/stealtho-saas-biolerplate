@@ -1,16 +1,19 @@
 /**
  * NextCut — Create Stripe Checkout Session
  *
- * Creates a Stripe Checkout session with:
- *   - application_fee_amount: platform commission (in cents)
- *   - transfer_data.destination: barber's Stripe Connect account
+ * PRICING IS SERVER-SIDE ONLY:
+ *   - Service name, price, and duration are fetched from the NextCut DB (not from client payload)
+ *   - Commission is calculated here on the server using the stored commission rules
+ *   - Client-supplied price values are IGNORED for security
  *
  * Flow:
- *   1. Frontend calls this with booking details
- *   2. We create a pending booking in DB
- *   3. We create Stripe Checkout session
- *   4. Return the Checkout URL → frontend redirects client there
- *   5. On payment success, Stripe webhook marks booking confirmed + paid
+ *   1. Frontend sends booking intent (barber_id, service_id, date, time, commission context)
+ *   2. Server fetches authoritative service price from DB
+ *   3. Server calculates platform fee and barber earnings
+ *   4. Server creates a pending Booking record
+ *   5. Server creates Stripe Checkout session with price_data (no Stripe Products needed)
+ *   6. Stripe routes full charge through NextCut, deducts application_fee, transfers rest to barber
+ *   7. Webhook marks booking confirmed + paid on success
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
@@ -27,70 +30,86 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       barber_id,
-      barber_name,
       service_id,
-      service_name,
-      service_price,
-      platform_fee,
-      barber_earnings,
-      commission_rate,
+      date,
+      time,
+      notes,
+      // Commission context — these come from the frontend booking flow
       commission_type,
+      commission_rate,
       customer_source,
       is_repeat_client,
       referred_by_barber_id,
-      date,
-      time,
-      duration_minutes,
-      notes,
       success_url,
       cancel_url,
     } = body;
 
-    // Fetch barber to get their Stripe account ID
-    const barbers = await base44.asServiceRole.entities.Barber.filter({ id: barber_id });
+    // ── 1. Fetch authoritative data from DB (never trust client-sent prices) ──
+    const [barbers, services] = await Promise.all([
+      base44.asServiceRole.entities.Barber.filter({ id: barber_id }),
+      base44.asServiceRole.entities.Service.filter({ id: service_id }),
+    ]);
+
     if (!barbers.length) {
       return Response.json({ error: 'Barber not found' }, { status: 404 });
     }
+    if (!services.length) {
+      return Response.json({ error: 'Service not found' }, { status: 404 });
+    }
+
     const barber = barbers[0];
+    const service = services[0];
 
     if (!barber.stripe_account_id || !barber.payouts_enabled) {
       return Response.json({ error: 'Barber has not completed Stripe setup' }, { status: 400 });
     }
 
-    // Create the pending booking first so we have an ID to attach to the payment
+    // ── 2. Calculate commission server-side ──
+    // Commission rates: 20% new lead, 15% repeat, 10% barber-direct
+    const COMMISSION_RATES = {
+      new_nextcut_lead: 0.20,
+      repeat_client: 0.15,
+      barber_direct_client: 0.10,
+    };
+    const resolvedRate = COMMISSION_RATES[commission_type] ?? commission_rate ?? 0.20;
+    const servicePrice = service.price;
+    const platformFee = Math.round(servicePrice * resolvedRate * 100) / 100;
+    const barberEarnings = Math.round((servicePrice - platformFee) * 100) / 100;
+
+    const priceInCents = Math.round(servicePrice * 100);
+    const platformFeeInCents = Math.round(platformFee * 100);
+
+    // ── 3. Create a pending booking in DB ──
     const booking = await base44.asServiceRole.entities.Booking.create({
       client_email: user.email,
       client_name: user.full_name,
       barber_id,
-      barber_name,
+      barber_name: barber.display_name,
       service_id,
-      service_name,
-      price: service_price,
-      service_price,
+      service_name: service.service_name,
+      price: servicePrice,
+      service_price: servicePrice,
       tip_amount: 0,
-      platform_fee,
-      barber_earnings,
-      commission_rate,
-      commission_type,
+      platform_fee: platformFee,
+      barber_earnings: barberEarnings,
+      commission_rate: resolvedRate,
+      commission_type: commission_type || 'new_nextcut_lead',
       customer_source: customer_source || 'marketplace',
       is_repeat_client: is_repeat_client || false,
       referred_by_barber_id: referred_by_barber_id || undefined,
       date,
       time,
-      duration_minutes,
-      status: 'pending',          // stays pending until payment succeeds
+      duration_minutes: service.duration_minutes,
+      status: 'pending',
       payment_status: 'unpaid',
       notes: notes || '',
     });
 
+    // ── 4. Create Stripe Checkout session using price_data (no Stripe Products) ──
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
       apiVersion: '2024-06-20',
     });
 
-    const priceInCents = Math.round(service_price * 100);
-    const platformFeeInCents = Math.round(platform_fee * 100);
-
-    // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -98,9 +117,11 @@ Deno.serve(async (req) => {
         {
           price_data: {
             currency: 'usd',
+            // price_data with product_data = no Stripe Product required
+            // Price is sourced from NextCut DB, not barber's Stripe dashboard
             product_data: {
-              name: service_name,
-              description: `${barber_name} — ${date} at ${time}`,
+              name: service.service_name,
+              description: `${barber.display_name} — ${date} at ${time}`,
             },
             unit_amount: priceInCents,
           },
@@ -108,6 +129,7 @@ Deno.serve(async (req) => {
         },
       ],
       payment_intent_data: {
+        // Platform collects its fee; remainder is transferred to barber's connected account
         application_fee_amount: platformFeeInCents,
         transfer_data: {
           destination: barber.stripe_account_id,
@@ -116,6 +138,8 @@ Deno.serve(async (req) => {
           booking_id: booking.id,
           barber_id,
           client_email: user.email,
+          commission_type: commission_type || 'new_nextcut_lead',
+          commission_rate: String(resolvedRate),
         },
       },
       metadata: {

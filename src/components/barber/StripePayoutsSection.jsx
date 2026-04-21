@@ -14,8 +14,8 @@ const STATUS_CONFIG = {
     banner: "bg-slate-50 border-slate-200",
     icon: AlertCircle,
     iconColor: "text-slate-400",
-    headline: "Connect Stripe to get paid",
-    body: "Stripe is required to receive automatic payouts from client bookings. Without it, you can still accept bookings but won't receive online payments.",
+    headline: "Connect Stripe to receive payouts",
+    body: "Stripe is used only for payout delivery and identity verification — your service prices are set in your NextCut Services tab, not in Stripe. Connect to start receiving online payments.",
     cta: "Connect Stripe",
     ctaVariant: "default",
   },
@@ -25,8 +25,8 @@ const STATUS_CONFIG = {
     banner: "bg-orange-50 border-orange-200",
     icon: AlertCircle,
     iconColor: "text-orange-500",
-    headline: "Finish Stripe setup to enable payouts",
-    body: "You've started connecting Stripe, but need to complete the onboarding steps before payouts can be enabled.",
+    headline: "Complete Stripe setup to enable payouts",
+    body: "Finish Stripe's identity and banking steps to enable payout delivery. Your NextCut service prices are not affected — they're managed in your Services tab.",
     cta: "Continue Stripe Setup",
     ctaVariant: "default",
   },
@@ -37,7 +37,7 @@ const STATUS_CONFIG = {
     icon: Clock,
     iconColor: "text-amber-500",
     headline: "Stripe setup in progress",
-    body: "You've started Stripe onboarding. If you haven't finished, click below to resume. Once complete, click Sync Status to update your payout status.",
+    body: "Complete the Stripe onboarding steps to unlock payouts. Once done, click 'Check If Complete' to sync your status. Service pricing remains controlled by NextCut.",
     cta: "Resume Stripe Setup",
     ctaVariant: "outline",
   },
@@ -48,7 +48,7 @@ const STATUS_CONFIG = {
     icon: CheckCircle2,
     iconColor: "text-emerald-500",
     headline: "You're payout-ready!",
-    body: "Your Stripe account is connected and payouts are enabled. Clients who pay online will have earnings sent directly to your bank account.",
+    body: "Your Stripe account is connected for payout delivery. Client payments are processed at the prices you set in your NextCut Services tab — Stripe does not control your pricing.",
     cta: null,
   },
 };
@@ -224,8 +224,16 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
           </div>
         </div>
 
-        {/* Info footnote */}
-        <div className="flex items-start gap-2 text-xs text-muted-foreground pt-1">
+        {/* Pricing clarity note */}
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-accent/50 border border-accent">
+          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent-foreground" />
+          <span className="text-xs text-accent-foreground leading-relaxed">
+            <strong>Stripe is for payouts only.</strong> Your service names and prices are managed in your <strong>Services tab</strong> — not in your Stripe dashboard. NextCut controls all booking prices.
+          </span>
+        </div>
+
+        {/* Commission footnote */}
+        <div className="flex items-start gap-2 text-xs text-muted-foreground">
           <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <span>
             Commission rates: <strong>20%</strong> new NextCut clients · <strong>15%</strong> repeat clients · <strong>10%</strong> your own clients.
