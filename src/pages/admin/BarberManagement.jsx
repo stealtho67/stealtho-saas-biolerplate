@@ -27,6 +27,18 @@ export default function BarberManagement() {
     setBarbers(prev => prev.map(b => b.id === id ? { ...b, ...data } : b));
     setActionLoading(null);
     toast.success(msg);
+
+    // Fire-and-forget email notification on approval
+    if (data.status === "active") {
+      const barber = barbers.find(b => b.id === id);
+      if (barber?.user_email) {
+        base44.integrations.Core.SendEmail({
+          to: barber.user_email,
+          subject: "NextCut — You're Approved! 🎉",
+          body: `Hi ${barber.display_name},\n\nGreat news! Your NextCut barber application has been approved. You are now visible on the marketplace and can start receiving bookings.\n\nComplete your profile and connect Stripe to start getting paid:\nhttps://nextcut.app/dashboard\n\nWelcome to the team!\n— The NextCut Team`
+        }).catch(() => {});
+      }
+    }
   };
 
   const pending = barbers.filter(b => b.status === "pending");
@@ -137,7 +149,7 @@ export default function BarberManagement() {
                 <tr>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Barber</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Location</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rating</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">Stripe</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Bookings</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>

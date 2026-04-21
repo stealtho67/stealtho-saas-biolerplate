@@ -187,8 +187,8 @@ export default function BarberApplication() {
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 mb-6">
             🕐 Your profile is <strong>pending approval</strong>. You won't appear in the marketplace until an admin approves your application.
           </div>
-          <Button onClick={() => navigate("/")} className="w-full h-12 rounded-xl">
-            Back to Home
+          <Button onClick={() => navigate("/dashboard")} className="w-full h-12 rounded-xl">
+            Go to My Dashboard
           </Button>
         </div>
       </div>

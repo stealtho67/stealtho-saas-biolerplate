@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Calendar, DollarSign, Users, Star, TrendingUp, Clock, Info, Link2, Copy, LayoutDashboard, UserCircle, Scissors, Images } from "lucide-react";
 import { COMMISSION_LABELS } from "@/lib/commissionRules";
@@ -15,12 +15,43 @@ import { toast } from "sonner";
 
 export default function BarberDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [barber, setBarber] = useState(null);
   const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadDashboard(); }, []);
+
+  // Auto-sync Stripe status when returning from Stripe onboarding
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("stripe") === "complete") {
+      // Remove query param from URL without reload
+      window.history.replaceState({}, "", "/dashboard");
+      // Sync after a short delay to let Stripe finalize
+      setTimeout(async () => {
+        try {
+          const me = await base44.auth.me();
+          const barbers = await base44.entities.Barber.filter({ user_email: me.email });
+          if (barbers.length > 0) {
+            const res = await base44.functions.invoke("stripeConnect", {
+              action: "sync_status",
+              barber_id: barbers[0].id,
+            });
+            if (res.data?.status) {
+              setBarber(prev => prev ? { ...prev, stripe_status: res.data.status, payouts_enabled: res.data.payouts_enabled } : prev);
+              if (res.data.status === "active") {
+                toast.success("🎉 Stripe connected! Payouts are now enabled.");
+              }
+            }
+          }
+        } catch (e) {
+          // Silent — don't block UI
+        }
+      }, 2000);
+    }
+  }, [location.search]);
 
   const loadDashboard = async () => {
     const me = await base44.auth.me();
@@ -73,7 +104,7 @@ export default function BarberDashboard() {
         </div>
         {barber.status === "pending" && (
           <span className="text-xs px-3 py-1 rounded-full bg-amber-100 text-amber-700 font-medium border border-amber-200">
-            Pending Approval
+            ⏳ Pending Approval
           </span>
         )}
         {barber.status === "active" && (
@@ -161,6 +192,20 @@ function OverviewTab({ barber, bookings }) {
 
   return (
     <div className="space-y-5">
+      {/* Pending approval banner */}
+      {barber.status === "pending" && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+          <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Your application is under review</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Once an admin approves your profile, you'll be visible to clients on the marketplace.
+              You can still set up your services, portfolio, and Stripe while you wait.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
         {stats.map((stat) => (

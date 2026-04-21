@@ -67,21 +67,7 @@ export default function Profile() {
     setLoading(false);
   };
 
-  const becomeBarber = async () => {
-    setSaving(true);
-    await base44.auth.updateMe({ role: "barber" });
-    const newBarber = await base44.entities.Barber.create({
-      user_email: user.email,
-      display_name: user.full_name,
-      city: "",
-      status: "active",
-    });
-    setBarber(newBarber);
-    setIsBarber(true);
-    setDisplayName(user.full_name);
-    setSaving(false);
-    toast.success("Welcome! Set up your barber profile.");
-  };
+  // Barbers must go through the proper application flow — no shortcut here
 
   const saveProfile = async () => {
     setSaving(true);

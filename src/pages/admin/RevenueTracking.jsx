@@ -72,7 +72,7 @@ export default function RevenueTracking() {
   const stats = [
     { icon: DollarSign, label: "Total Gross Revenue", value: `$${totalGross.toLocaleString()}`, color: "text-emerald-600 bg-emerald-100" },
     { icon: TrendingUp, label: `Revenue (${range}d)`, value: `$${rangeGross.toLocaleString()}`, color: "text-blue-600 bg-blue-100" },
-    { icon: DollarSign, label: "Platform Fees (15%)", value: `$${platformRevenue.toLocaleString()}`, color: "text-purple-600 bg-purple-100" },
+    { icon: DollarSign, label: "Platform Fees Earned", value: `$${platformRevenue.toLocaleString()}`, color: "text-purple-600 bg-purple-100" },
     { icon: CheckCircle2, label: "Paid Bookings", value: paidBookings.length, color: "text-teal-600 bg-teal-100" },
     { icon: Clock, label: "Unpaid Bookings", value: unpaidBookings.length, color: "text-orange-600 bg-orange-100" },
     { icon: BarChart2, label: "Avg Booking Value", value: `$${avgValue}`, color: "text-rose-600 bg-rose-100" },
