@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { Calendar, Clock, MapPin, Star, Loader2, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +24,12 @@ export default function MyBookings() {
 
   useEffect(() => {
     loadData();
+    // Show success toast when returning from Stripe Checkout
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      toast.success("Payment confirmed! Your booking is all set.");
+      window.history.replaceState({}, "", "/my-bookings");
+    }
   }, []);
 
   const loadData = async () => {

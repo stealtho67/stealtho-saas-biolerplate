@@ -95,20 +95,30 @@ Deno.serve(async (req) => {
       case 'payment_intent.succeeded': {
         /**
          * Fires when a client completes an online payment.
-         * Matches the payment intent to a booking and marks it paid.
-         * (For future use when online payments are enabled)
+         * Marks booking as confirmed + paid and sends confirmation email.
          */
         const paymentIntent = event.data.object;
         const bookingId = paymentIntent.metadata?.booking_id;
 
         if (bookingId) {
           await base44.asServiceRole.entities.Booking.update(bookingId, {
+            status: 'confirmed',
             payment_status: 'paid',
             payment_method: 'stripe',
             paid_at: new Date().toISOString(),
             stripe_payment_intent_id: paymentIntent.id,
           });
-          console.log(`Booking ${bookingId} marked paid via Stripe`);
+          console.log(`Booking ${bookingId} confirmed + paid via Stripe`);
+
+          // Send confirmation email to client
+          const clientEmail = paymentIntent.metadata?.client_email;
+          if (clientEmail) {
+            base44.asServiceRole.integrations.Core.SendEmail({
+              to: clientEmail,
+              subject: 'NextCut — Payment Confirmed! ✅',
+              body: `Your payment was successful and your booking is confirmed. See your upcoming appointments at ${Deno.env.get('APP_URL')}/my-bookings`,
+            }).catch(() => {});
+          }
         }
         break;
       }

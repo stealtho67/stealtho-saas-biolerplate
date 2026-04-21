@@ -3,9 +3,9 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, CheckCircle2, Loader2 } from "lucide-react";
-import { getCommissionRules, resolveCommissionType, calcCommission, SOURCE_TO_TYPE } from "@/lib/commissionRules";
-import { format, addDays, isBefore, startOfToday } from "date-fns";
+import { Calendar, Clock, CheckCircle2, Loader2, CreditCard, Banknote } from "lucide-react";
+import { getCommissionRules, resolveCommissionType, calcCommission } from "@/lib/commissionRules";
+import { format, addDays, startOfToday } from "date-fns";
 
 const TIME_SLOTS = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -26,11 +26,10 @@ export default function BookingModal({ open, onClose, barber, services }) {
 
   const today = startOfToday();
   const dates = Array.from({ length: 14 }, (_, i) => addDays(today, i));
+  const canPayOnline = barber?.payouts_enabled && barber?.stripe_account_id;
 
   useEffect(() => {
-    if (open && barber) {
-      loadExistingBookings();
-    }
+    if (open && barber) loadExistingBookings();
     if (!open) {
       setStep(1);
       setSelectedService(null);
@@ -42,82 +41,93 @@ export default function BookingModal({ open, onClose, barber, services }) {
   }, [open, barber]);
 
   const loadExistingBookings = async () => {
-    const bookings = await base44.entities.Booking.filter({
-      barber_id: barber.id,
-      status: "confirmed"
-    });
+    const bookings = await base44.entities.Booking.filter({ barber_id: barber.id, status: "confirmed" });
     setExistingBookings(bookings);
   };
 
   const getAvailableSlots = () => {
     if (!selectedDate) return TIME_SLOTS;
     const dateStr = format(selectedDate, "yyyy-MM-dd");
-    const bookedTimes = existingBookings
-      .filter(b => b.date === dateStr)
-      .map(b => b.time);
+    const bookedTimes = existingBookings.filter(b => b.date === dateStr).map(b => b.time);
     return TIME_SLOTS.filter(t => !bookedTimes.includes(t));
   };
 
-  const handleBook = async () => {
+  const buildBookingPayload = async () => {
+    const user = await base44.auth.me();
+    if (!user) { base44.auth.redirectToLogin(window.location.href); return null; }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const sourceParam = urlParams.get("source");
+    const referredByBarberId = urlParams.get("ref_barber");
+    const customerSource = sourceParam || "marketplace";
+
+    const commissionType = await resolveCommissionType(user.email, barber.id, customerSource);
+    const rules = await getCommissionRules();
+    const commissionRate = rules[commissionType];
+    const { platformFee, barberEarnings } = calcCommission(selectedService.price, 0, commissionRate);
+
+    return {
+      user,
+      barber_id: barber.id,
+      barber_name: barber.display_name,
+      service_id: selectedService.id,
+      service_name: selectedService.service_name,
+      service_price: selectedService.price,
+      platform_fee: platformFee,
+      barber_earnings: barberEarnings,
+      commission_rate: commissionRate,
+      commission_type: commissionType,
+      customer_source: customerSource,
+      is_repeat_client: commissionType === "repeat_client",
+      referred_by_barber_id: referredByBarberId || undefined,
+      date: format(selectedDate, "yyyy-MM-dd"),
+      time: selectedTime,
+      duration_minutes: selectedService.duration_minutes,
+      notes,
+    };
+  };
+
+  // Pay online via Stripe Checkout
+  const handlePayOnline = async () => {
     setLoading(true);
-    try {
-      const user = await base44.auth.me();
-      if (!user) {
-        base44.auth.redirectToLogin(window.location.href);
-        return;
-      }
+    const payload = await buildBookingPayload();
+    if (!payload) { setLoading(false); return; }
 
-      // Determine customer source — check URL param for barber-direct links
-      const urlParams = new URLSearchParams(window.location.search);
-      const sourceParam = urlParams.get("source");
-      const referredByBarberId = urlParams.get("ref_barber");
-      const customerSource = sourceParam || "marketplace";
+    const res = await base44.functions.invoke("createCheckoutSession", {
+      ...payload,
+      success_url: `${window.location.origin}/my-bookings?payment=success`,
+      cancel_url: `${window.location.origin}/barber/${barber.id}?payment=cancelled`,
+    });
 
-      // Resolve commission type (repeat > barber-direct > new lead)
-      const commissionType = await resolveCommissionType(user.email, barber.id, customerSource);
-      const rules = await getCommissionRules();
-      const commissionRate = rules[commissionType];
-      const { platformFee, barberEarnings } = calcCommission(selectedService.price, 0, commissionRate);
-      const isRepeat = commissionType === "repeat_client";
+    // Redirect to Stripe Checkout
+    window.location.href = res.data.checkout_url;
+  };
 
-      await base44.entities.Booking.create({
-        client_email: user.email,
-        client_name: user.full_name,
-        barber_id: barber.id,
-        barber_name: barber.display_name,
-        service_id: selectedService.id,
-        service_name: selectedService.service_name,
-        price: selectedService.price,
-        service_price: selectedService.price,
-        tip_amount: 0,
-        platform_fee: platformFee,
-        barber_earnings: barberEarnings,
-        commission_rate: commissionRate,
-        commission_type: commissionType,
-        customer_source: customerSource,
-        is_repeat_client: isRepeat,
-        referred_by_barber_id: referredByBarberId || undefined,
-        date: format(selectedDate, "yyyy-MM-dd"),
-        time: selectedTime,
-        duration_minutes: selectedService.duration_minutes,
-        status: "confirmed",
-        payment_status: "unpaid",
-        notes: notes
-      });
+  // Book without online payment (in-person)
+  const handleBookInPerson = async () => {
+    setLoading(true);
+    const payload = await buildBookingPayload();
+    if (!payload) { setLoading(false); return; }
+    const { user, ...bookingData } = payload;
 
-      // Send confirmation email — fire and forget, never block booking
-      base44.integrations.Core.SendEmail({
-        to: user.email,
-        subject: `Booking Confirmed — ${barber.display_name}`,
-        body: `Your ${selectedService.service_name} with ${barber.display_name} is confirmed for ${format(selectedDate, "MMMM d, yyyy")} at ${selectedTime}.\n\nPrice: $${selectedService.price}\n\nSee you soon!`
-      }).catch(() => {});
+    await base44.entities.Booking.create({
+      client_email: user.email,
+      client_name: user.full_name,
+      ...bookingData,
+      price: bookingData.service_price,
+      tip_amount: 0,
+      status: "confirmed",
+      payment_status: "unpaid",
+    });
 
-      setSuccess(true);
-    } catch (err) {
-      console.error("Booking error:", err);
-    } finally {
-      setLoading(false);
-    }
+    base44.integrations.Core.SendEmail({
+      to: user.email,
+      subject: `Booking Confirmed — ${barber.display_name}`,
+      body: `Your ${selectedService.service_name} with ${barber.display_name} is confirmed for ${format(selectedDate, "MMMM d, yyyy")} at ${selectedTime}.\n\nPrice: $${selectedService.price} (pay in person)\n\nSee you soon!`
+    }).catch(() => {});
+
+    setSuccess(true);
+    setLoading(false);
   };
 
   const availableSlots = getAvailableSlots();
@@ -133,7 +143,8 @@ export default function BookingModal({ open, onClose, barber, services }) {
             <h3 className="font-heading font-bold text-xl">Booking Confirmed!</h3>
             <p className="text-muted-foreground text-sm">
               {selectedService?.service_name} with {barber?.display_name}<br />
-              {selectedDate && format(selectedDate, "MMMM d, yyyy")} at {selectedTime}
+              {selectedDate && format(selectedDate, "MMMM d, yyyy")} at {selectedTime}<br />
+              <span className="text-amber-600 font-medium">Pay in person at your appointment</span>
             </p>
             <Button onClick={onClose} className="mt-2 w-full">Done</Button>
           </div>
@@ -144,7 +155,7 @@ export default function BookingModal({ open, onClose, barber, services }) {
                 {step === 1 && "Select a Service"}
                 {step === 2 && "Pick a Date"}
                 {step === 3 && "Choose a Time"}
-                {step === 4 && "Confirm Booking"}
+                {step === 4 && "Confirm & Pay"}
               </DialogTitle>
               <div className="flex gap-1 mt-2">
                 {[1, 2, 3, 4].map((s) => (
@@ -160,20 +171,14 @@ export default function BookingModal({ open, onClose, barber, services }) {
                     key={service.id}
                     onClick={() => { setSelectedService(service); setStep(2); }}
                     className={`w-full text-left p-4 rounded-xl border transition-all ${
-                      selectedService?.id === service.id
-                        ? "border-primary bg-accent"
-                        : "border-border hover:border-primary/30"
+                      selectedService?.id === service.id ? "border-primary bg-accent" : "border-border hover:border-primary/30"
                     }`}
                   >
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-medium text-sm">{service.service_name}</h4>
-                        {service.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{service.description}</p>
-                        )}
-                        <span className="text-xs text-muted-foreground mt-1 block">
-                          {service.duration_minutes} min
-                        </span>
+                        {service.description && <p className="text-xs text-muted-foreground mt-0.5">{service.description}</p>}
+                        <span className="text-xs text-muted-foreground mt-1 block">{service.duration_minutes} min</span>
                       </div>
                       <span className="font-heading font-bold text-lg">${service.price}</span>
                     </div>
@@ -190,22 +195,16 @@ export default function BookingModal({ open, onClose, barber, services }) {
                       key={date.toISOString()}
                       onClick={() => { setSelectedDate(date); setStep(3); }}
                       className={`p-3 rounded-xl border text-center transition-all ${
-                        selectedDate?.toDateString() === date.toDateString()
-                          ? "border-primary bg-accent"
-                          : "border-border hover:border-primary/30"
+                        selectedDate?.toDateString() === date.toDateString() ? "border-primary bg-accent" : "border-border hover:border-primary/30"
                       }`}
                     >
-                      <div className="text-[10px] text-muted-foreground uppercase">
-                        {format(date, "EEE")}
-                      </div>
+                      <div className="text-[10px] text-muted-foreground uppercase">{format(date, "EEE")}</div>
                       <div className="font-heading font-bold text-lg">{format(date, "d")}</div>
                       <div className="text-[10px] text-muted-foreground">{format(date, "MMM")}</div>
                     </button>
                   ))}
                 </div>
-                <Button variant="ghost" onClick={() => setStep(1)} className="mt-3 w-full">
-                  Back
-                </Button>
+                <Button variant="ghost" onClick={() => setStep(1)} className="mt-3 w-full">Back</Button>
               </div>
             )}
 
@@ -220,9 +219,7 @@ export default function BookingModal({ open, onClose, barber, services }) {
                         key={time}
                         onClick={() => { setSelectedTime(time); setStep(4); }}
                         className={`p-3 rounded-xl border text-sm font-medium transition-all ${
-                          selectedTime === time
-                            ? "border-primary bg-accent"
-                            : "border-border hover:border-primary/30"
+                          selectedTime === time ? "border-primary bg-accent" : "border-border hover:border-primary/30"
                         }`}
                       >
                         {time}
@@ -230,14 +227,13 @@ export default function BookingModal({ open, onClose, barber, services }) {
                     ))}
                   </div>
                 )}
-                <Button variant="ghost" onClick={() => setStep(2)} className="mt-3 w-full">
-                  Back
-                </Button>
+                <Button variant="ghost" onClick={() => setStep(2)} className="mt-3 w-full">Back</Button>
               </div>
             )}
 
             {step === 4 && (
               <div className="mt-4 space-y-4">
+                {/* Summary */}
                 <div className="bg-secondary rounded-xl p-4 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Service</span>
@@ -262,6 +258,7 @@ export default function BookingModal({ open, onClose, barber, services }) {
                     <span className="font-heading font-bold text-lg">${selectedService?.price}</span>
                   </div>
                 </div>
+
                 <Textarea
                   placeholder="Any special requests? (optional)"
                   value={notes}
@@ -269,14 +266,46 @@ export default function BookingModal({ open, onClose, barber, services }) {
                   className="resize-none"
                   rows={2}
                 />
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
-                    Back
-                  </Button>
-                  <Button onClick={handleBook} disabled={loading} className="flex-1">
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Booking"}
-                  </Button>
-                </div>
+
+                {/* Payment options */}
+                {canPayOnline ? (
+                  <div className="space-y-2">
+                    <Button
+                      onClick={handlePayOnline}
+                      disabled={loading}
+                      className="w-full h-12 rounded-xl shadow-lg shadow-primary/20 gap-2 text-base"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                      Pay Now · ${selectedService?.price}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleBookInPerson}
+                      disabled={loading}
+                      className="w-full gap-2"
+                    >
+                      <Banknote className="w-4 h-4" /> Pay in Person
+                    </Button>
+                    <p className="text-[11px] text-center text-muted-foreground">
+                      Online payments are secure and processed by Stripe
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Button
+                      onClick={handleBookInPerson}
+                      disabled={loading}
+                      className="w-full h-12 rounded-xl gap-2 text-base"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Booking"}
+                    </Button>
+                    <p className="text-[11px] text-center text-muted-foreground">Payment collected in person at your appointment</p>
+                  </div>
+                )}
+
+                <Button variant="ghost" onClick={() => setStep(3)} className="w-full" disabled={loading}>
+                  Back
+                </Button>
               </div>
             )}
           </>
