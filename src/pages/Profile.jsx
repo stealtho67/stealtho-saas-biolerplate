@@ -206,7 +206,7 @@ export default function Profile() {
         <TabsList className="w-full bg-secondary rounded-xl h-11">
           <TabsTrigger value="dashboard" className="flex-1 rounded-lg flex items-center gap-1.5">
             <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Dashboard</span>
+            <span>Status</span>
           </TabsTrigger>
           <TabsTrigger value="profile" className="flex-1 rounded-lg">Profile</TabsTrigger>
           <TabsTrigger value="services" className="flex-1 rounded-lg">Services</TabsTrigger>

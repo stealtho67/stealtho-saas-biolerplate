@@ -95,7 +95,7 @@ export default function Overview() {
 
   const stats = [
     { icon: DollarSign, label: "Total Revenue", value: `$${data.totalRevenue.toLocaleString()}`, sub: `$${data.rev7} last 7d`, color: "text-emerald-600 bg-emerald-100" },
-    { icon: DollarSign, label: "Platform Fees", value: `$${data.totalPlatformFees.toLocaleString()}`, sub: "15% per booking", color: "text-teal-600 bg-teal-100" },
+    { icon: DollarSign, label: "Platform Fees", value: `$${data.totalPlatformFees.toLocaleString()}`, sub: "10–20% per booking", color: "text-teal-600 bg-teal-100" },
     { icon: Calendar, label: "Paid Bookings", value: data.paidBookings, sub: `${data.unpaidBookings} unpaid`, color: "text-blue-600 bg-blue-100" },
     { icon: Scissors, label: "Active Barbers", value: data.activeBarbers, sub: `${data.pendingBarbers} pending`, color: "text-purple-600 bg-purple-100" },
     { icon: Users, label: "Total Users", value: data.totalUsers.toLocaleString(), sub: "All time", color: "text-orange-600 bg-orange-100" },

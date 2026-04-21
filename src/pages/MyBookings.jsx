@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
-import { Calendar, Clock, MapPin, Star, Loader2, Search } from "lucide-react";
+import { Calendar, Clock, MapPin, Star, Loader2, Search, LayoutDashboard } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,17 +39,15 @@ export default function MyBookings() {
       return;
     }
     setUser(me);
-    const isBrb = me?.role === "barber";
-    setIsBarber(isBrb);
+
+    // Check for barber record — more reliable than role field which can lag
+    const barbers = await base44.entities.Barber.filter({ user_email: me.email });
+    const hasBarberRecord = barbers.length > 0;
+    setIsBarber(hasBarberRecord);
 
     let allBookings;
-    if (isBrb) {
-      const barbers = await base44.entities.Barber.filter({ user_email: me.email });
-      if (barbers.length > 0) {
-        allBookings = await base44.entities.Booking.filter({ barber_id: barbers[0].id });
-      } else {
-        allBookings = [];
-      }
+    if (hasBarberRecord) {
+      allBookings = await base44.entities.Booking.filter({ barber_id: barbers[0].id });
     } else {
       allBookings = await base44.entities.Booking.filter({ client_email: me.email });
     }
@@ -60,6 +58,18 @@ export default function MyBookings() {
   const updateStatus = async (bookingId, status) => {
     await base44.entities.Booking.update(bookingId, { status });
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status } : b));
+    // Update barber total_bookings count when completing a booking
+    if (status === "completed") {
+      const booking = bookings.find(b => b.id === bookingId);
+      if (booking?.barber_id) {
+        const barbers = await base44.entities.Barber.filter({ id: booking.barber_id });
+        if (barbers.length > 0) {
+          await base44.entities.Barber.update(booking.barber_id, {
+            total_bookings: (barbers[0].total_bookings || 0) + 1,
+          });
+        }
+      }
+    }
   };
 
   const markPaid = async (booking) => {
@@ -197,9 +207,18 @@ export default function MyBookings() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-8">
-      <h1 className="font-heading font-bold text-2xl mb-6">
-        {isBarber ? "My Appointments" : "My Bookings"}
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="font-heading font-bold text-2xl">
+          {isBarber ? "My Appointments" : "My Bookings"}
+        </h1>
+        {isBarber && (
+          <Link to="/dashboard">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+              <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard
+            </Button>
+          </Link>
+        )}
+      </div>
 
       <Tabs defaultValue="upcoming">
         <TabsList className="w-full bg-secondary rounded-xl h-11">

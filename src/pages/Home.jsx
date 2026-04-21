@@ -12,6 +12,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
   const [stats, setStats] = useState({ barbers: 0, cities: 0 });
+  const [isBarberUser, setIsBarberUser] = useState(false);
 
   useEffect(() => {
     loadBarbers();
@@ -27,7 +28,17 @@ export default function Home() {
     const uniqueCities = new Set(allBarbers.map(b => b.city).filter(Boolean));
     setStats({ barbers: allBarbers.length, cities: uniqueCities.size });
     setLoading(false);
-    base44.auth.me().then(me => setUserRole(me?.role || "client")).catch(() => setUserRole("client"));
+    base44.auth.me().then(async me => {
+      if (!me) return;
+      setUserRole(me.role || "client");
+      // Also check for barber record — role field can lag after application submit
+      if (me.role === "barber" || me.role === "admin") {
+        setIsBarberUser(true);
+      } else if (me.email) {
+        const myBarbers = await base44.entities.Barber.filter({ user_email: me.email });
+        setIsBarberUser(myBarbers.length > 0);
+      }
+    }).catch(() => setUserRole("client"));
   };
 
   return (
@@ -106,7 +117,7 @@ export default function Home() {
           title="Available Now"
           icon={<Zap className="w-4 h-4 text-emerald-500" />}
           barbers={availableNow}
-          linkTo="/explore?filter=available"
+          linkTo="/explore"
         />
       )}
 
@@ -126,7 +137,7 @@ export default function Home() {
           title="Top Rated"
           icon={<TrendingUp className="w-4 h-4 text-primary" />}
           barbers={topBarbers}
-          linkTo="/explore?sort=rating"
+          linkTo="/explore"
         />
       )}
 
@@ -146,8 +157,8 @@ export default function Home() {
         </section>
       )}
 
-      {/* Barber CTA — shown to non-barbers */}
-      {!loading && userRole !== "barber" && userRole !== "admin" && (
+      {/* Barber CTA — shown to non-barbers who haven't applied */}
+      {!loading && !isBarberUser && userRole !== "admin" && (
         <section className="max-w-6xl mx-auto px-4 py-10">
           <div className="bg-gradient-to-br from-primary/10 to-accent/30 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
             <div>

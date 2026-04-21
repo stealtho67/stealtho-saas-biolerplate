@@ -43,6 +43,7 @@ export default function BarberManagement() {
 
   const pending = barbers.filter(b => b.status === "pending");
   const active = barbers.filter(b => b.status === "active");
+  // "suspended" covers both rejected applicants and suspended active barbers
   const suspended = barbers.filter(b => b.status === "suspended");
 
   if (loading) return <Loading />;
@@ -57,10 +58,10 @@ export default function BarberManagement() {
       <Tabs defaultValue="pending">
         <TabsList className="bg-slate-100 rounded-xl mb-6">
           <TabsTrigger value="pending" className="rounded-lg">
-            Pending {pending.length > 0 && <span className="ml-1.5 px-1.5 py-0.5 bg-red-500 text-white text-[10px] rounded-full">{pending.length}</span>}
+            Pending {pending.length > 0 && <span className="ml-1.5 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] rounded-full">{pending.length}</span>}
           </TabsTrigger>
           <TabsTrigger value="active" className="rounded-lg">Active ({active.length})</TabsTrigger>
-          <TabsTrigger value="suspended" className="rounded-lg">Suspended ({suspended.length})</TabsTrigger>
+          <TabsTrigger value="suspended" className="rounded-lg">Rejected/Suspended ({suspended.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending">
@@ -206,13 +207,19 @@ export default function BarberManagement() {
                     <tr key={b.id}>
                       <td className="px-4 py-3">
                         <p className="font-medium text-slate-800">{b.display_name}</p>
-                        <p className="text-xs text-slate-400">{b.city}</p>
+                        <p className="text-xs text-slate-400">{b.city} · {b.user_email}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <Button size="sm" className="h-7 text-xs rounded-lg" disabled={actionLoading === b.id}
-                          onClick={() => updateBarber(b.id, { status: "active" }, "Barber reinstated")}>
-                          Reinstate
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" className="h-7 text-xs rounded-lg" disabled={actionLoading === b.id}
+                            onClick={() => updateBarber(b.id, { status: "active" }, "Barber reinstated as active")}>
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg" disabled={actionLoading === b.id}
+                            onClick={() => updateBarber(b.id, { status: "pending" }, "Barber moved back to pending")}>
+                            Move to Pending
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

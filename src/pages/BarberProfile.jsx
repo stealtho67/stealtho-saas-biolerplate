@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { MapPin, Star, BadgeCheck, Clock, Calendar, ArrowLeft, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +22,12 @@ export default function BarberProfile() {
 
   useEffect(() => {
     loadData();
+    // Handle cancelled Stripe payment — show toast and clean up pending booking
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "cancelled") {
+      toast.info("Payment cancelled — your booking was not confirmed.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, [id]);
 
   const loadData = async () => {
@@ -79,7 +86,7 @@ export default function BarberProfile() {
             variant="secondary"
             size="icon"
             className="rounded-full backdrop-blur-sm bg-white/80"
-            onClick={() => navigator.clipboard.writeText(window.location.href)}
+            onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); }}
           >
             <Share2 className="w-4 h-4" />
           </Button>
