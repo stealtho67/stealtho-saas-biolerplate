@@ -51,7 +51,12 @@ Deno.serve(async (req) => {
 
     if (action === 'get_onboarding_link') {
       // Resume onboarding for a barber who already has an account
-      const barbers = await base44.asServiceRole.entities.Barber.filter({ id: barber_id });
+      let barbers;
+      try {
+        barbers = await base44.asServiceRole.entities.Barber.filter({ id: barber_id });
+      } catch {
+        return Response.json({ error: 'Barber not found' }, { status: 404 });
+      }
       if (!barbers.length || !barbers[0].stripe_account_id) {
         return Response.json({ error: 'No Stripe account found' }, { status: 404 });
       }
@@ -68,7 +73,12 @@ Deno.serve(async (req) => {
 
     if (action === 'sync_status') {
       // Sync Stripe account status back to our DB
-      const barbers = await base44.asServiceRole.entities.Barber.filter({ id: barber_id });
+      let barbers;
+      try {
+        barbers = await base44.asServiceRole.entities.Barber.filter({ id: barber_id });
+      } catch {
+        return Response.json({ status: 'not_connected' });
+      }
       if (!barbers.length || !barbers[0].stripe_account_id) {
         return Response.json({ status: 'not_connected' });
       }

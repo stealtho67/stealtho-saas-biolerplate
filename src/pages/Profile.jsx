@@ -195,12 +195,23 @@ export default function Profile() {
   const stripeInfo = stripeStatusInfo(barber?.stripe_status || "not_connected");
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-heading font-bold text-2xl">Barber Profile</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="font-heading font-bold text-2xl">My Profile</h1>
         <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${stripeInfo.bg} ${stripeInfo.color}`}>
           <Zap className="w-3 h-3 inline mr-1" />{stripeInfo.label}
         </span>
       </div>
+
+      {/* Quick link to full barber dashboard */}
+      <Link to="/dashboard" className="block mb-5">
+        <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
+          <div className="flex items-center gap-2">
+            <LayoutDashboard className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Open Full Barber Dashboard</span>
+          </div>
+          <span className="text-primary text-xs">→</span>
+        </div>
+      </Link>
 
       <Tabs defaultValue="dashboard">
         <TabsList className="w-full bg-secondary rounded-xl h-11">

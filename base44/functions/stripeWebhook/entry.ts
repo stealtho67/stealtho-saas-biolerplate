@@ -101,8 +101,13 @@ Deno.serve(async (req) => {
         const bookingId = paymentIntent.metadata?.booking_id;
 
         if (bookingId) {
+          // Fetch booking to check its current status — don't overwrite 'completed' with 'confirmed'
+          const existingBookings = await base44.asServiceRole.entities.Booking.filter({ id: bookingId });
+          const existingStatus = existingBookings[0]?.status;
+          const newStatus = existingStatus === 'completed' ? 'completed' : 'confirmed';
+
           await base44.asServiceRole.entities.Booking.update(bookingId, {
-            status: 'confirmed',
+            status: newStatus,
             payment_status: 'paid',
             payment_method: 'stripe',
             paid_at: new Date().toISOString(),

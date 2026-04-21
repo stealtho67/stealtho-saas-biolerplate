@@ -45,6 +45,7 @@ export default function Layout() {
     : isBarber
     ? [
         { path: "/", icon: Home, label: "Home" },
+        { path: "/explore", icon: Search, label: "Explore" },
         { path: "/dashboard", icon: Scissors, label: "Dashboard" },
         { path: "/my-bookings", icon: Calendar, label: "Bookings" },
         { path: "/profile", icon: User, label: "Profile" },
@@ -83,19 +84,18 @@ export default function Layout() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          {user && (
-            <span className="text-sm text-muted-foreground">
-              {user.full_name}
-            </span>
+          {user ? (
+            <>
+              <span className="text-sm text-muted-foreground">{user.full_name}</span>
+              <Button variant="ghost" size="icon" onClick={() => base44.auth.logout()} className="text-muted-foreground">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={() => base44.auth.redirectToLogin(window.location.href)}>
+              Sign In
+            </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => base44.auth.logout()}
-            className="text-muted-foreground"
-          >
-            <LogOut className="w-4 h-4" />
-          </Button>
         </div>
       </header>
 

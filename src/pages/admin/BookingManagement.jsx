@@ -82,7 +82,7 @@ export default function BookingManagement() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                {["Client", "Barber", "Service", "Date & Time", "Amount", "Status", "Actions"].map(h => (
+                {["Client", "Barber", "Service", "Date & Time", "Amount", "Payment", "Status", "Actions"].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -96,7 +96,12 @@ export default function BookingManagement() {
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
                     {b.date && format(parseISO(b.date), "MMM d, yyyy")} {b.time}
                   </td>
-                  <td className="px-4 py-3 font-semibold text-slate-800">${b.price}</td>
+                  <td className="px-4 py-3 font-semibold text-slate-800">${b.service_price || b.price || 0}</td>
+                  <td className="px-4 py-3">
+                    <Badge className={`border-0 text-xs ${b.payment_status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                      {b.payment_status || "unpaid"}
+                    </Badge>
+                  </td>
                   <td className="px-4 py-3">
                     <Badge className={`${STATUS_COLORS[b.status]} border-0 text-xs`}>{b.status}</Badge>
                   </td>

@@ -18,6 +18,7 @@ export default function MyBookings() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isBarber, setIsBarber] = useState(false);
+  const [barberProfile, setBarberProfile] = useState(null);
   const [reviewModal, setReviewModal] = useState(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
@@ -46,6 +47,7 @@ export default function MyBookings() {
     const barbers = await base44.entities.Barber.filter({ user_email: me.email });
     const hasBarberRecord = barbers.length > 0;
     setIsBarber(hasBarberRecord);
+    if (hasBarberRecord) setBarberProfile(barbers[0]);
 
     let allBookings;
     if (hasBarberRecord) {
@@ -190,7 +192,7 @@ export default function MyBookings() {
           </>
         )}
         {/* Only the booking owner (client) or barber can cancel, and only upcoming bookings */}
-        {booking.status === "confirmed" && !isPast(parseISO(booking.date + "T" + (booking.time || "00:00"))) && (
+        {booking.status === "confirmed" && !safeIsPast(booking) && (
           <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg text-destructive" onClick={() => updateStatus(booking.id, "cancelled")}>
             Cancel
           </Button>
@@ -275,6 +277,7 @@ export default function MyBookings() {
       {paymentModal && (
         <CollectPaymentModal
           booking={paymentModal}
+          barber={barberProfile}
           open={!!paymentModal}
           onClose={() => setPaymentModal(null)}
           onMarkPaid={(booking) => { markPaid(booking); setPaymentModal(null); }}

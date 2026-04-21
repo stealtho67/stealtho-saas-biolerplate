@@ -101,6 +101,7 @@
         "not_connected",
         "onboarding_required",
         "onboarding_in_progress",
+        "verification_needed",
         "active"
       ],
       "default": "not_connected",

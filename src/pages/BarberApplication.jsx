@@ -33,7 +33,11 @@ export default function BarberApplication() {
   // On mount: if user already has a barber profile OR barber role, send them to dashboard
   useEffect(() => {
     base44.auth.me().then(me => {
-      if (!me) { setCheckingExisting(false); return; }
+      if (!me) {
+        // Not logged in — redirect to login, return to /apply after
+        base44.auth.redirectToLogin(window.location.href);
+        return;
+      }
       // Check barber record first (most reliable — role field can lag)
       base44.entities.Barber.filter({ user_email: me.email }).then(existing => {
         if (existing.length > 0 || me.role === "barber") {

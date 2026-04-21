@@ -110,7 +110,7 @@ export default function Overview() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4">
             <div className={`w-9 h-9 rounded-lg ${s.color} flex items-center justify-center mb-3`}>

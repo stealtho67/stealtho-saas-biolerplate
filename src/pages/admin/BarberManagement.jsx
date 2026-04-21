@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { CheckCircle, XCircle, Eye, BadgeCheck, MapPin, Star, Calendar, Ban, Loader2, Zap } from "lucide-react";
+import { CheckCircle, XCircle, Eye, BadgeCheck, MapPin, Ban, Loader2, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { stripeStatusInfo } from "@/lib/stripeConfig";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -175,15 +176,22 @@ export default function BarberManagement() {
                     </td>
                     <td className="px-4 py-3 text-slate-600 hidden md:table-cell">{b.total_bookings || 0}</td>
                     <td className="px-4 py-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs rounded-lg text-red-600 border-red-200 hover:bg-red-50"
-                        disabled={actionLoading === b.id}
-                        onClick={() => updateBarber(b.id, { status: "suspended" }, "Barber suspended")}
-                      >
-                        <Ban className="w-3 h-3 mr-1" /> Suspend
-                      </Button>
+                     <div className="flex items-center gap-2">
+                       <Link to={`/barber/${b.id}`} target="_blank">
+                         <Button size="sm" variant="ghost" className="h-7 text-xs rounded-lg gap-1">
+                           <ExternalLink className="w-3 h-3" /> View
+                         </Button>
+                       </Link>
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         className="h-7 text-xs rounded-lg text-red-600 border-red-200 hover:bg-red-50"
+                         disabled={actionLoading === b.id}
+                         onClick={() => updateBarber(b.id, { status: "suspended" }, "Barber suspended")}
+                       >
+                         <Ban className="w-3 h-3 mr-1" /> Suspend
+                       </Button>
+                     </div>
                     </td>
                   </tr>
                 ))}

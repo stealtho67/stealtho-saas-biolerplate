@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { CreditCard, Loader2, ExternalLink, DollarSign, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
-export default function CollectPaymentModal({ booking, open, onClose, onMarkPaid }) {
+export default function CollectPaymentModal({ booking, barber, open, onClose, onMarkPaid }) {
   const [finalPrice, setFinalPrice] = useState(String(booking?.service_price || booking?.price || ""));
   const [tipAmount, setTipAmount] = useState("0");
   const [loading, setLoading] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
+
+  const canUseStripe = barber?.payouts_enabled && barber?.stripe_account_id;
 
   const servicePrice = parseFloat(finalPrice) || 0;
   const tip = parseFloat(tipAmount) || 0;
@@ -120,21 +122,32 @@ export default function CollectPaymentModal({ booking, open, onClose, onMarkPaid
               <span className="font-heading font-bold text-xl">${total.toFixed(2)}</span>
             </div>
 
-            <Button
-              onClick={handleGenerateLink}
-              disabled={loading || servicePrice <= 0}
-              className="w-full gap-2 h-11 shadow-md shadow-primary/20"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <CreditCard className="w-4 h-4" />
-              )}
-              {loading ? "Generating..." : "Generate Payment Link"}
-            </Button>
+            {canUseStripe ? (
+              <Button
+                onClick={handleGenerateLink}
+                disabled={loading || servicePrice <= 0}
+                className="w-full gap-2 h-11 shadow-md shadow-primary/20"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CreditCard className="w-4 h-4" />
+                )}
+                {loading ? "Generating..." : "Generate Stripe Payment Link"}
+              </Button>
+            ) : (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 text-center">
+                Connect Stripe from your Dashboard → Payouts tab to collect card payments.
+              </div>
+            )}
 
+            <div className="relative flex items-center gap-2">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-muted-foreground">or</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
             <Button variant="outline" className="w-full gap-2" onClick={() => { onMarkPaid(booking); handleClose(); }}>
-              Mark as Paid in Cash / Already Paid
+              Mark as Paid (Cash / Already Paid)
             </Button>
           </div>
         ) : (
