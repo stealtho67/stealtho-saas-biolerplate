@@ -91,22 +91,19 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
 
   const handleConnectStripe = async () => {
     setConnecting(true);
-    // Open a blank window immediately (before await) to avoid popup blockers
-    const stripeWindow = window.open("", "_blank");
     try {
       const action = localBarber?.stripe_account_id ? "get_onboarding_link" : "create_account";
       const res = await base44.functions.invoke("stripeConnect", { action, barber_id: localBarber.id });
       if (res.data?.url) {
-        stripeWindow.location.href = res.data.url;
         const updated = { ...localBarber, stripe_status: "onboarding_in_progress" };
         setLocalBarber(updated);
         onBarberUpdate?.(updated);
+        // Redirect in the same tab so Stripe's return_url brings them back here
+        window.location.href = res.data.url;
       } else {
-        stripeWindow.close();
         toast.error("Could not start Stripe onboarding. Please try again.");
       }
     } catch (err) {
-      stripeWindow.close();
       toast.error("Stripe connect failed: " + err.message);
     } finally {
       setConnecting(false);
