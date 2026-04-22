@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search, SlidersHorizontal, X, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BarberCard from "../components/BarberCard";
 import EmptyState from "../components/EmptyState";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 
 export default function Explore() {
   const [barbers, setBarbers] = useState([]);
@@ -25,13 +27,16 @@ export default function Explore() {
     applyFilters();
   }, [barbers, search, sortBy, cityFilter]);
 
-  const loadBarbers = async () => {
+  const loadBarbers = useCallback(async () => {
+    setLoading(true);
     const all = await base44.entities.Barber.filter({ status: "active" });
     setBarbers(all);
     const uniqueCities = [...new Set(all.map(b => b.city).filter(Boolean))];
     setCities(uniqueCities);
     setLoading(false);
-  };
+  }, []);
+
+  const { pulling, pullDistance, refreshing, threshold } = usePullToRefresh(loadBarbers);
 
   const applyFilters = () => {
     let result = [...barbers];
@@ -63,6 +68,7 @@ export default function Explore() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 pb-24 md:pb-8">
+      <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
       <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl">Explore Barbers</h1>
         <p className="text-muted-foreground text-sm mt-1">Find the perfect barber near you</p>

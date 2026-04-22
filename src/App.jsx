@@ -1,9 +1,11 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { useDarkMode } from '@/hooks/useDarkMode';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
@@ -22,8 +24,31 @@ import AdminUsers from './pages/admin/UserManagement';
 import AdminReviews from './pages/admin/ReviewsModeration';
 import AdminSettings from './pages/admin/Settings';
 
+const PageWrapper = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, x: 16 }}
+    animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: -16 }}
+    transition={{ duration: 0.18, ease: "easeInOut" }}
+  >
+    {children}
+  </motion.div>
+);
+
+const AnimatedRoutes = ({ children }) => {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        {children}
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  useDarkMode();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -47,27 +72,27 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <Routes>
+    <AnimatedRoutes>
       <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/explore" element={<Explore />} />
-        <Route path="/barber/:id" element={<BarberProfile />} />
-        <Route path="/my-bookings" element={<MyBookings />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/dashboard" element={<BarberDashboard />} />
-        <Route path="/apply" element={<BarberApplication />} />
+        <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
+        <Route path="/explore" element={<PageWrapper><Explore /></PageWrapper>} />
+        <Route path="/barber/:id" element={<PageWrapper><BarberProfile /></PageWrapper>} />
+        <Route path="/my-bookings" element={<PageWrapper><MyBookings /></PageWrapper>} />
+        <Route path="/profile" element={<PageWrapper><Profile /></PageWrapper>} />
+        <Route path="/dashboard" element={<PageWrapper><BarberDashboard /></PageWrapper>} />
+        <Route path="/apply" element={<PageWrapper><BarberApplication /></PageWrapper>} />
       </Route>
       <Route element={<AdminLayout />}>
-        <Route path="/admin" element={<AdminOverview />} />
-        <Route path="/admin/barbers" element={<AdminBarbers />} />
-        <Route path="/admin/bookings" element={<AdminBookings />} />
-        <Route path="/admin/revenue" element={<AdminRevenue />} />
-        <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/reviews" element={<AdminReviews />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin" element={<PageWrapper><AdminOverview /></PageWrapper>} />
+        <Route path="/admin/barbers" element={<PageWrapper><AdminBarbers /></PageWrapper>} />
+        <Route path="/admin/bookings" element={<PageWrapper><AdminBookings /></PageWrapper>} />
+        <Route path="/admin/revenue" element={<PageWrapper><AdminRevenue /></PageWrapper>} />
+        <Route path="/admin/users" element={<PageWrapper><AdminUsers /></PageWrapper>} />
+        <Route path="/admin/reviews" element={<PageWrapper><AdminReviews /></PageWrapper>} />
+        <Route path="/admin/settings" element={<PageWrapper><AdminSettings /></PageWrapper>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
-    </Routes>
+    </AnimatedRoutes>
   );
 };
 

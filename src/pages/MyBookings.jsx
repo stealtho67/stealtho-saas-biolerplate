@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { Calendar, Clock, Star, Loader2, Search, LayoutDashboard, CreditCard } from "lucide-react";
@@ -12,6 +12,8 @@ import { Link } from "react-router-dom";
 import StarRating from "../components/StarRating";
 import EmptyState from "../components/EmptyState";
 import CollectPaymentModal from "../components/barber/CollectPaymentModal";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -35,7 +37,7 @@ export default function MyBookings() {
     }
   }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     const me = await base44.auth.me();
     if (!me) {
       setLoading(false);
@@ -57,7 +59,9 @@ export default function MyBookings() {
     }
     setBookings(allBookings.sort((a, b) => new Date(b.date) - new Date(a.date)));
     setLoading(false);
-  };
+  }, []);
+
+  const { pulling, pullDistance, refreshing, threshold } = usePullToRefresh(loadData);
 
   const updateStatus = async (bookingId, status) => {
     await base44.entities.Booking.update(bookingId, { status });
@@ -213,6 +217,7 @@ export default function MyBookings() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-8">
+      <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-heading font-bold text-2xl">
           {isBarber ? "My Appointments" : "My Bookings"}

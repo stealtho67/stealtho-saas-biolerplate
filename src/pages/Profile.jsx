@@ -8,10 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
-import { User, Scissors, Upload, Loader2, BadgeCheck, Plus, X, Trash2, Shield, Zap, LayoutDashboard } from "lucide-react";
+import { User, Scissors, Upload, Loader2, BadgeCheck, Plus, X, Trash2, Shield, Zap, LayoutDashboard, AlertTriangle } from "lucide-react";
 import { stripeStatusInfo } from "@/lib/stripeConfig";
 import { toast } from "sonner";
 import BarberProfileTab from "@/components/barber/BarberProfileTab";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -20,6 +21,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isBarber, setIsBarber] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Barber form
   const [displayName, setDisplayName] = useState("");
@@ -128,6 +130,18 @@ export default function Profile() {
     toast.success("Service removed");
   };
 
+  const deleteAccount = async () => {
+    setDeletingAccount(true);
+    // Delete all user data then log out
+    if (barber) {
+      const userServices = await base44.entities.Service.filter({ barber_id: barber.id });
+      await Promise.all(userServices.map(s => base44.entities.Service.delete(s.id)));
+      await base44.entities.Barber.delete(barber.id);
+    }
+    toast.success("Account deleted. Signing out...");
+    setTimeout(() => base44.auth.logout(), 1500);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
@@ -187,6 +201,8 @@ export default function Profile() {
             </Link>
           </div>
         )}
+
+        <DeleteAccountSection onDelete={deleteAccount} deleting={deletingAccount} />
       </div>
     );
   }
@@ -428,6 +444,43 @@ export default function Profile() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <DeleteAccountSection onDelete={deleteAccount} deleting={deletingAccount} />
+    </div>
+  );
+}
+
+function DeleteAccountSection({ onDelete, deleting }) {
+  return (
+    <div className="mt-6 p-5 rounded-2xl border border-destructive/30 bg-destructive/5">
+      <div className="flex items-center gap-2 mb-2">
+        <AlertTriangle className="w-4 h-4 text-destructive" />
+        <h3 className="font-heading font-semibold text-destructive text-sm">Delete Account</h3>
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">
+        Permanently delete your account and all associated data. This action cannot be undone.
+      </p>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" size="sm" disabled={deleting} className="w-full">
+            {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete My Account"}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your account and all your data including bookings, services, and profile. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onDelete} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+              Yes, Delete My Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
