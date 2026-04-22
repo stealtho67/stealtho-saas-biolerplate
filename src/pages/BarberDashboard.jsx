@@ -84,10 +84,16 @@ export default function BarberDashboard() {
 
     const barbers = await base44.entities.Barber.filter({ user_email: me.email });
 
-    // Allow access if they have a barber record OR are barber/admin role
     const hasBarberRecord = barbers.length > 0;
-    const hasBarberRole = me.role === "barber" || me.role === "admin";
-    if (!hasBarberRecord && !hasBarberRole) {
+
+    // Admins without a barber record should go to admin dashboard
+    if (!hasBarberRecord && me.role === "admin") {
+      navigate("/admin", { replace: true });
+      return;
+    }
+
+    // Non-barbers without a barber record go home
+    if (!hasBarberRecord && me.role !== "barber") {
       navigate("/", { replace: true });
       return;
     }

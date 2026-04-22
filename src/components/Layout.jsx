@@ -34,10 +34,19 @@ export default function Layout() {
   const isBarber = user?.role === "barber" || !!barberProfile;
   const isActive = (path) => location.pathname === path;
 
-  const navItems = isAdmin
+  const navItems = isAdmin && !barberProfile
     ? [
         { path: "/", icon: Home, label: "Home" },
         { path: "/explore", icon: Search, label: "Explore" },
+        { path: "/my-bookings", icon: Calendar, label: "Bookings" },
+        { path: "/profile", icon: User, label: "Profile" },
+        { path: "/admin", icon: Shield, label: "Admin" },
+      ]
+    : isAdmin && barberProfile
+    ? [
+        { path: "/", icon: Home, label: "Home" },
+        { path: "/explore", icon: Search, label: "Explore" },
+        { path: "/dashboard", icon: Scissors, label: "Dashboard" },
         { path: "/my-bookings", icon: Calendar, label: "Bookings" },
         { path: "/profile", icon: User, label: "Profile" },
         { path: "/admin", icon: Shield, label: "Admin" },
