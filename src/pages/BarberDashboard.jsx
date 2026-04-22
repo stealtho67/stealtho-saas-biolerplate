@@ -13,6 +13,7 @@ import PortfolioEditor from "@/components/barber/PortfolioEditor";
 import OnboardingChecklist from "@/components/barber/OnboardingChecklist";
 import StripePayoutsSection from "@/components/barber/StripePayoutsSection";
 import StatusHeader from "@/components/barber/StatusHeader";
+import BarberInfoTab from "@/components/barber/BarberInfoTab";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,6 +25,7 @@ const TABS = [
   { id: "services", label: "Services", icon: Scissors },
   { id: "portfolio", label: "Portfolio", icon: Images },
   { id: "payouts", label: "Payouts", icon: CreditCard },
+  { id: "info", label: "Info", icon: Info },
 ];
 
 export default function BarberDashboard() {
@@ -215,6 +217,11 @@ export default function BarberDashboard() {
             bookings={bookings}
             onBarberUpdate={setBarber}
           />
+        </TabsContent>
+
+        {/* ── INFO TAB ── */}
+        <TabsContent value="info">
+          <BarberInfoTab barber={barber} />
         </TabsContent>
       </Tabs>
     </div>

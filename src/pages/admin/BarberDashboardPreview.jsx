@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Shield, ArrowLeft, LayoutDashboard, UserCircle, Scissors, Images, CreditCard } from "lucide-react";
+import { Shield, ArrowLeft, LayoutDashboard, UserCircle, Scissors, Images, CreditCard, BookOpen } from "lucide-react";
+import BarberInfoTab from "@/components/barber/BarberInfoTab";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatusHeader from "@/components/barber/StatusHeader";
@@ -19,6 +20,7 @@ const TABS = [
   { id: "services", label: "Services", icon: Scissors },
   { id: "portfolio", label: "Portfolio", icon: Images },
   { id: "payouts", label: "Payouts", icon: CreditCard },
+  { id: "info", label: "Info", icon: BookOpen },
 ];
 
 // Blank barber template for when a barber has minimal data
@@ -184,6 +186,11 @@ export default function BarberDashboardPreview() {
             bookings={bookings}
             onBarberUpdate={(updated) => setBarber(b => ({ ...b, ...updated }))}
           />
+        </TabsContent>
+
+        {/* INFO */}
+        <TabsContent value="info">
+          <BarberInfoTab barber={barber} />
         </TabsContent>
       </Tabs>
     </div>
