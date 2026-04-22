@@ -55,8 +55,9 @@ const STRIPE_STATUS = {
 };
 
 export default function StatusHeader({ barber }) {
+  if (!barber) return null;
   const appStatus = APPLICATION_STATUS[barber.status] || APPLICATION_STATUS.pending;
-  const stripeStatus = STRIPE_STATUS[barber.stripe_status || "not_connected"];
+  const stripeStatus = STRIPE_STATUS[barber.stripe_status || "not_connected"] || STRIPE_STATUS.not_connected;
   const AppIcon = appStatus.icon;
   const StripeIcon = stripeStatus.icon;
   const isFullyLive = barber.status === "active" && barber.payouts_enabled;

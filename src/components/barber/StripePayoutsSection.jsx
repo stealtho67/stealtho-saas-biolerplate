@@ -80,9 +80,10 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
   const cfg = STATUS_CONFIG[stripeStatus] || STATUS_CONFIG.not_connected;
   const isActive = stripeStatus === "active" && localBarber?.payouts_enabled;
 
-  const completedPaid = bookings.filter(b => b.status === "completed" && b.payment_status === "paid");
-  const completedUnpaid = bookings.filter(b => b.status === "completed" && b.payment_status !== "paid");
-  const pendingBookings = bookings.filter(b => b.status === "confirmed");
+  const safeBookings = bookings || [];
+  const completedPaid = safeBookings.filter(b => b.status === "completed" && b.payment_status === "paid");
+  const completedUnpaid = safeBookings.filter(b => b.status === "completed" && b.payment_status !== "paid");
+  const pendingBookings = safeBookings.filter(b => b.status === "confirmed");
 
   const paidEarnings = completedPaid.reduce((s, b) => s + (b.barber_earnings ?? 0), 0);
   const pendingEarnings = completedUnpaid.reduce((s, b) => s + (b.barber_earnings ?? 0), 0);
