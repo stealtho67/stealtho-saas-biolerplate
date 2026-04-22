@@ -86,19 +86,16 @@ export default function BarberDashboard() {
 
     const hasBarberRecord = barbers.length > 0;
 
-    // Admins without a barber record should go to admin dashboard
-    if (!hasBarberRecord && me.role === "admin") {
-      navigate("/admin", { replace: true });
+    if (!hasBarberRecord) {
+      // Admins without a barber record → admin dashboard
+      if (me.role === "admin") {
+        navigate("/admin", { replace: true });
+      } else {
+        // Everyone else (including barbers whose record creation failed) → apply
+        navigate(me.role === "barber" ? "/apply" : "/", { replace: true });
+      }
       return;
     }
-
-    // Non-barbers without a barber record go home
-    if (!hasBarberRecord && me.role !== "barber") {
-      navigate("/", { replace: true });
-      return;
-    }
-
-    if (barbers.length === 0) { setLoading(false); return; }
     const b = barbers[0];
     setBarber(b);
     const [allBookings, svcList] = await Promise.all([
