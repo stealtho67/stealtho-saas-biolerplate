@@ -23,6 +23,7 @@ import AdminRevenue from './pages/admin/RevenueTracking';
 import AdminUsers from './pages/admin/UserManagement';
 import AdminReviews from './pages/admin/ReviewsModeration';
 import AdminSettings from './pages/admin/Settings';
+import BarberDashboardPreview from './pages/admin/BarberDashboardPreview';
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -90,6 +91,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/users" element={<PageWrapper><AdminUsers /></PageWrapper>} />
         <Route path="/admin/reviews" element={<PageWrapper><AdminReviews /></PageWrapper>} />
         <Route path="/admin/settings" element={<PageWrapper><AdminSettings /></PageWrapper>} />
+        <Route path="/admin/barber-preview/:id" element={<PageWrapper><BarberDashboardPreview /></PageWrapper>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </AnimatedRoutes>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { CheckCircle, XCircle, Eye, BadgeCheck, MapPin, Ban, Loader2, ExternalLink } from "lucide-react";
+import { CheckCircle, XCircle, Eye, BadgeCheck, MapPin, Ban, Loader2, ExternalLink, LayoutDashboard } from "lucide-react";
 import { Link } from "react-router-dom";
 import { stripeStatusInfo } from "@/lib/stripeConfig";
 import { Button } from "@/components/ui/button";
@@ -116,7 +116,7 @@ export default function BarberManagement() {
                       <p className="text-[10px] text-slate-400 mt-1">
                         Applied: {b.created_date ? new Date(b.created_date).toLocaleDateString() : "—"}
                       </p>
-                      <div className="flex gap-2 mt-3">
+                      <div className="flex flex-wrap gap-2 mt-3">
                         <Button
                           size="sm"
                           className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1.5"
@@ -135,6 +135,11 @@ export default function BarberManagement() {
                         >
                           <XCircle className="w-3.5 h-3.5" /> Reject
                         </Button>
+                        <Link to={`/admin/barber-preview/${b.id}`} target="_blank">
+                          <Button size="sm" variant="outline" className="h-8 rounded-lg gap-1.5 border-primary/30 text-primary hover:bg-primary/5">
+                            <LayoutDashboard className="w-3.5 h-3.5" /> Preview Dashboard
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -176,10 +181,15 @@ export default function BarberManagement() {
                     </td>
                     <td className="px-4 py-3 text-slate-600 hidden md:table-cell">{b.total_bookings || 0}</td>
                     <td className="px-4 py-3">
-                     <div className="flex items-center gap-2">
+                     <div className="flex items-center gap-2 flex-wrap">
                        <Link to={`/barber/${b.id}`} target="_blank">
                          <Button size="sm" variant="ghost" className="h-7 text-xs rounded-lg gap-1">
                            <ExternalLink className="w-3 h-3" /> View
+                         </Button>
+                       </Link>
+                       <Link to={`/admin/barber-preview/${b.id}`} target="_blank">
+                         <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg gap-1 border-primary/30 text-primary hover:bg-primary/5">
+                           <LayoutDashboard className="w-3 h-3" /> Preview Dashboard
                          </Button>
                        </Link>
                        <Button
@@ -218,7 +228,7 @@ export default function BarberManagement() {
                         <p className="text-xs text-slate-400">{b.city} · {b.user_email}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <Button size="sm" className="h-7 text-xs rounded-lg" disabled={actionLoading === b.id}
                             onClick={() => updateBarber(b.id, { status: "active" }, "Barber reinstated as active")}>
                             Approve
@@ -227,6 +237,11 @@ export default function BarberManagement() {
                             onClick={() => updateBarber(b.id, { status: "pending" }, "Barber moved back to pending")}>
                             Move to Pending
                           </Button>
+                          <Link to={`/admin/barber-preview/${b.id}`} target="_blank">
+                            <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg gap-1 border-primary/30 text-primary hover:bg-primary/5">
+                              <LayoutDashboard className="w-3 h-3" /> Preview
+                            </Button>
+                          </Link>
                         </div>
                       </td>
                     </tr>
