@@ -40,11 +40,11 @@ export default function BarberProfile() {
     const b = barbers[0];
     setBarber(b);
 
-    const [svc, rev] = await Promise.all([
-      base44.entities.Service.filter({ barber_id: id }),
+    const [svcRes, rev] = await Promise.all([
+      base44.functions.invoke("manageBarberServices", { action: "listPublic", barberId: id }),
       base44.entities.Review.filter({ barber_id: id }),
     ]);
-    setServices(svc);
+    setServices(svcRes.data?.services || []);
     setReviews(rev.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
     setLoading(false);
   };
