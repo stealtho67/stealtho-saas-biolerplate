@@ -4,7 +4,9 @@
 //  real key to go live. No other changes needed.
 // ─────────────────────────────────────────────
 
-export const PLATFORM_FEE_PERCENT = 0.15; // 15%
+// DEPRECATED: Use getCommissionRules() from lib/commissionRules.js instead
+// This is kept for backwards compatibility only
+export const PLATFORM_FEE_PERCENT = 0.15; // Legacy fallback
 
 // Publishable key — safe for frontend (never use secret key here)
 // Set VITE_STRIPE_PUBLISHABLE_KEY in your Base44 environment variables

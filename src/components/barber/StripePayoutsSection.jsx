@@ -5,6 +5,7 @@ import {
   Zap, RefreshCw, ExternalLink, CheckCircle2, AlertCircle,
   Clock, DollarSign, Info, ShieldCheck
 } from "lucide-react";
+import { getCommissionRules } from "@/lib/commissionRules";
 import { toast } from "sonner";
 
 const STATUS_CONFIG = {
@@ -73,8 +74,10 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [localBarber, setLocalBarber] = useState(barber);
+  const [rates, setRates] = useState(null);
 
   useEffect(() => { setLocalBarber(barber); }, [barber]);
+  useEffect(() => { getCommissionRules().then(setRates); }, []);
 
   const stripeStatus = localBarber?.stripe_status || "not_connected";
   const cfg = STATUS_CONFIG[stripeStatus] || STATUS_CONFIG.not_connected;
@@ -255,7 +258,11 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
         <div className="flex items-start gap-2 text-xs text-muted-foreground">
           <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <span>
-            Commission rates: <strong>20%</strong> new NextCut clients · <strong>15%</strong> repeat clients · <strong>10%</strong> your own clients.
+            Commission rates: {rates ? (
+              <><strong>{(rates.new_nextcut_lead * 100).toFixed(0)}%</strong> new NextCut clients · <strong>{(rates.repeat_client * 100).toFixed(0)}%</strong> repeat clients · <strong>{(rates.barber_direct_client * 100).toFixed(0)}%</strong> your own clients. </>
+            ) : (
+              "Loading rates... "
+            )}
             Tips are always <strong>100% yours</strong> and never shared with the platform.
           </span>
         </div>

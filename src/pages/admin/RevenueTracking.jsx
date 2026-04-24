@@ -9,7 +9,8 @@ import {
 import { subDays, format, parseISO, isAfter, startOfWeek, startOfMonth } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const PLATFORM_FEE = 0.1; // 10%
+import { calcCommission, COMMISSION_DEFAULTS } from "@/lib/commissionRules";
+
 const COLORS = ["hsl(174,62%,40%)", "hsl(174,45%,55%)", "hsl(210,40%,50%)", "hsl(43,74%,66%)", "hsl(27,87%,67%)"];
 
 export default function RevenueTracking() {
@@ -26,6 +27,7 @@ export default function RevenueTracking() {
   };
 
   const getPrice = (b) => b.service_price || b.price || 0;
+  // Fallback to legacy calc if missing, though ideally all new bookings have it
   const getFee = (b) => b.platform_fee ?? calcFees(getPrice(b)).platformFee;
 
   if (loading) return <Loading />;

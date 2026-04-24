@@ -6,7 +6,7 @@ import {
   Info, Link2, Copy, LayoutDashboard, UserCircle, Scissors,
   Images, CreditCard
 } from "lucide-react";
-import { COMMISSION_LABELS } from "@/lib/commissionRules";
+import { COMMISSION_LABELS, getCommissionRules } from "@/lib/commissionRules";
 import ProfileEditor from "@/components/barber/ProfileEditor";
 import ServicesEditor from "@/components/barber/ServicesEditor";
 import PortfolioEditor from "@/components/barber/PortfolioEditor";
@@ -232,6 +232,9 @@ export default function BarberDashboard() {
 // Overview sub-component
 // ────────────────────────────────────────────────
 function OverviewTab({ barber, services, bookings, onNavigate, onBarberUpdate }) {
+  const [rates, setRates] = useState(null);
+  useEffect(() => { getCommissionRules().then(setRates); }, []);
+
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -304,10 +307,10 @@ function OverviewTab({ barber, services, bookings, onNavigate, onBarberUpdate })
       )}
 
       {/* Direct Booking Link */}
-      <DirectBookingLink barber={barber} />
+      <DirectBookingLink barber={barber} rates={rates} />
 
       {/* Earnings Breakdown */}
-      <EarningsBreakdown bookings={completedBookings} />
+      <EarningsBreakdown bookings={completedBookings} rates={rates} />
 
       {/* Upcoming Appointments */}
       <UpcomingAppointments bookings={upcomingBookings} />
@@ -315,7 +318,9 @@ function OverviewTab({ barber, services, bookings, onNavigate, onBarberUpdate })
   );
 }
 
-function DirectBookingLink({ barber }) {
+function DirectBookingLink({ barber, rates }) {
+  const directPct = rates ? Math.round(rates.barber_direct_client * 100) : "...";
+  const newPct = rates ? Math.round(rates.new_nextcut_lead * 100) : "...";
   return (
     <div className="bg-card rounded-2xl border border-border p-5">
       <div className="flex items-center gap-2 mb-1">
@@ -323,7 +328,7 @@ function DirectBookingLink({ barber }) {
         <h3 className="font-heading font-semibold text-sm">Your Direct Booking Link</h3>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
-        Share with your existing clients — earns you a lower 10% fee vs 20% for new marketplace leads.
+        Share with your existing clients — earns you a lower {directPct}% fee vs {newPct}% for new marketplace leads.
       </p>
       <div className="flex gap-2">
         <input
@@ -342,7 +347,23 @@ function DirectBookingLink({ barber }) {
   );
 }
 
-function EarningsBreakdown({ bookings }) {
+function EarningsBreakdown({ bookings, rates }) {
+  const colorMap = {
+    new_nextcut_lead: "bg-purple-100 text-purple-700",
+    repeat_client: "bg-blue-100 text-blue-700",
+    barber_direct_client: "bg-emerald-100 text-emerald-700",
+  };
+  const getRateDesc = (type) => {
+    if (!rates) return "Loading rates...";
+    const pct = Math.round(rates[type] * 100);
+    const labels = {
+      new_nextcut_lead: `New NextCut leads — ${pct}% fee`,
+      repeat_client: `Returning clients — ${pct}% fee`,
+      barber_direct_client: `Your own clients — ${pct}% fee`,
+    };
+    return labels[type];
+  };
+
   return (
     <div className="bg-card rounded-2xl border border-border p-6">
       <h3 className="font-heading font-semibold mb-1">Earnings Breakdown</h3>
@@ -356,16 +377,6 @@ function EarningsBreakdown({ bookings }) {
           const gross = typeBookings.reduce((s, b) => s + (b.service_price || b.price || 0), 0);
           const fees = typeBookings.reduce((s, b) => s + (b.platform_fee || 0), 0);
           const tips = typeBookings.reduce((s, b) => s + (b.tip_amount || 0), 0);
-          const colorMap = {
-            new_nextcut_lead: "bg-purple-100 text-purple-700",
-            repeat_client: "bg-blue-100 text-blue-700",
-            barber_direct_client: "bg-emerald-100 text-emerald-700",
-          };
-          const rateDesc = {
-            new_nextcut_lead: "New NextCut leads — 20% fee",
-            repeat_client: "Returning clients — 15% fee",
-            barber_direct_client: "Your own clients — 10% fee",
-          };
           return (
             <div key={type} className="p-4 bg-secondary rounded-xl">
               <div className="flex items-center justify-between mb-2">
@@ -374,7 +385,7 @@ function EarningsBreakdown({ bookings }) {
                 </span>
                 <span className="text-xs text-muted-foreground">{typeBookings.length} bookings</span>
               </div>
-              <p className="text-xs text-muted-foreground mb-2">{rateDesc[type]}</p>
+              <p className="text-xs text-muted-foreground mb-2">{getRateDesc(type)}</p>
               <div className="flex gap-4 text-xs">
                 <div><p className="text-muted-foreground">Gross</p><p className="font-semibold">${gross.toFixed(2)}</p></div>
                 <div><p className="text-muted-foreground">Platform fee</p><p className="font-semibold text-destructive">-${fees.toFixed(2)}</p></div>

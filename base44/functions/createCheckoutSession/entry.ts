@@ -58,13 +58,17 @@ Deno.serve(async (req) => {
     }
 
     // ── 2. Calculate commission server-side ──
-    // Commission rates: 20% new lead, 15% repeat, 10% barber-direct
+    // Commission rates are loaded from database (PlatformSettings)
+    // Falls back to defaults if not set
+    const settings = await base44.asServiceRole.entities.PlatformSettings.list();
+    const settingsMap = {};
+    settings.forEach(s => { settingsMap[s.setting_key] = parseFloat(s.setting_value); });
     const COMMISSION_RATES = {
-      new_nextcut_lead: 0.20,
-      repeat_client: 0.15,
-      barber_direct_client: 0.10,
+      new_nextcut_lead: settingsMap["rate_new_nextcut_lead"] ?? 0.20,
+      repeat_client: settingsMap["rate_repeat_client"] ?? 0.15,
+      barber_direct_client: settingsMap["rate_barber_direct_client"] ?? 0.10,
     };
-    const resolvedRate = COMMISSION_RATES[commission_type] ?? commission_rate ?? 0.20;
+    const resolvedRate = COMMISSION_RATES[commission_type] ?? commission_rate ?? COMMISSION_RATES.new_nextcut_lead;
     const servicePrice = service.price;
     const platformFee = Math.round(servicePrice * resolvedRate * 100) / 100;
     const barberEarnings = Math.round((servicePrice - platformFee) * 100) / 100;

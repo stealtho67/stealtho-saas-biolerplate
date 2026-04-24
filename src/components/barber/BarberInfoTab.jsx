@@ -3,13 +3,30 @@ import {
   Zap, BookOpen, Star, HelpCircle, ChevronDown, ChevronUp,
   Scissors, Camera, Calendar, TrendingUp, Award, UserCheck
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getCommissionRules } from "@/lib/commissionRules";
 
 // ─────────────────────────────────────────────────────────────
 // SECTION CONTENT — edit this object to update the guide
+// Now a function that receives live commission rates
 // ─────────────────────────────────────────────────────────────
 
-const SECTIONS = [
+const getSections = (rates) => {
+  // Format rates for display
+  const newPct = rates ? Math.round(rates.new_nextcut_lead * 100) : 20;
+  const repeatPct = rates ? Math.round(rates.repeat_client * 100) : 15;
+  const directPct = rates ? Math.round(rates.barber_direct_client * 100) : 10;
+
+  // Calculate examples
+  const examplePrice = 50;
+  const newFee = (examplePrice * (rates?.new_nextcut_lead ?? 0.20)).toFixed(2);
+  const newEarn = (examplePrice - parseFloat(newFee)).toFixed(2);
+  const repeatFee = (examplePrice * (rates?.repeat_client ?? 0.15)).toFixed(2);
+  const repeatEarn = (examplePrice - parseFloat(repeatFee)).toFixed(2);
+  const directFee = (examplePrice * (rates?.barber_direct_client ?? 0.10)).toFixed(2);
+  const directEarn = (examplePrice - parseFloat(directFee)).toFixed(2);
+
+  return [
   {
     id: "welcome",
     icon: Zap,
@@ -141,7 +158,7 @@ const SECTIONS = [
         type: "callout",
         color: "amber",
         title: "Platform fee applies to your service price",
-        text: "If you want to take home around $40 on a first-time NextCut booking, you need to price your service higher than $40, because the 20% platform fee is calculated on the service price. For example: pricing at $50 means the platform fee is $10, leaving you with $40. See the Commission section below for full details.",
+        text: `If you want to take home around $40 on a first-time NextCut booking, you need to price your service higher than $40, because the ${newPct}% platform fee is calculated on the service price. For example: pricing at $50 means the platform fee is $${newFee}, leaving you with $${newEarn}. See the Commission section below for full details.`,
       },
       {
         type: "subheading",
@@ -201,19 +218,19 @@ const SECTIONS = [
         type: "commission_table",
         rows: [
           {
-            rate: "20%",
+            rate: `${newPct}%`,
             label: "New NextCut Client",
             badgeColor: "bg-purple-100 text-purple-700",
             desc: "Client discovered you through the NextCut marketplace, search, or platform promotion. This is a brand-new client the platform brought to you.",
           },
           {
-            rate: "15%",
+            rate: `${repeatPct}%`,
             label: "Repeat Client",
             badgeColor: "bg-blue-100 text-blue-700",
             desc: "The same client books you again through NextCut. Once a client has completed a paid booking with you, future bookings are recognized as repeat.",
           },
           {
-            rate: "10%",
+            rate: `${directPct}%`,
             label: "Barber-Direct Client",
             badgeColor: "bg-emerald-100 text-emerald-700",
             desc: "Client came via your personal direct booking link or a referral. This is the lowest fee because you brought the client yourself.",
@@ -227,9 +244,9 @@ const SECTIONS = [
       {
         type: "example_table",
         rows: [
-          { label: "20% — New NextCut client", fee: "$10.00", barber: "$40.00", feeColor: "text-red-500" },
-          { label: "15% — Repeat client", fee: "$7.50", barber: "$42.50", feeColor: "text-amber-500" },
-          { label: "10% — Direct / referred client", fee: "$5.00", barber: "$45.00", feeColor: "text-emerald-600" },
+          { label: `${newPct}% — New NextCut client`, fee: `$${newFee}`, barber: `$${newEarn}`, feeColor: "text-red-500" },
+          { label: `${repeatPct}% — Repeat client`, fee: `$${repeatFee}`, barber: `$${repeatEarn}`, feeColor: "text-amber-500" },
+          { label: `${directPct}% — Direct / referred client`, fee: `$${directFee}`, barber: `$${directEarn}`, feeColor: "text-emerald-600" },
         ],
       },
       {
@@ -435,7 +452,7 @@ const SECTIONS = [
           "Set fair, thoughtful pricing — don't underprice to chase early bookings",
           "Keep availability updated at all times so clients can always find an open slot",
           "Convert first-time NextCut clients into repeat clients through quality and professionalism",
-          "Share your direct booking link with your existing client base — it earns you a lower 10% fee",
+          `Share your direct booking link with your existing client base — it earns you a lower ${directPct}% fee`,
           "Maintain professionalism in every interaction — your reputation is your business",
           "Raise prices as your rating and demand grow — don't leave money on the table",
           "Respond to bookings promptly and honor every appointment",
@@ -446,7 +463,7 @@ const SECTIONS = [
         type: "callout",
         color: "primary",
         title: "Your direct booking link is underrated",
-        text: "When you share your NextCut profile link with your existing clients and they book through it, the commission drops from 20% to 10%. If you regularly send existing clients through that link, you're immediately doubling your margin on those bookings. Find your direct link in the Overview tab of your dashboard.",
+        text: `When you share your NextCut profile link with your existing clients and they book through it, the commission drops from ${newPct}% to ${directPct}%. If you regularly send existing clients through that link, you're significantly improving your margins on those bookings. Find your direct link in the Overview tab of your dashboard.`,
       },
     ],
   },
@@ -483,8 +500,14 @@ const SECTIONS = [
     ],
   },
 ];
+};
 
-const FAQ_ITEMS = [
+const getFaqItems = (rates) => {
+  const newPct = rates ? Math.round(rates.new_nextcut_lead * 100) : 20;
+  const repeatPct = rates ? Math.round(rates.repeat_client * 100) : 15;
+  const directPct = rates ? Math.round(rates.barber_direct_client * 100) : 10;
+
+  return [
   {
     q: "Why am I not visible publicly yet?",
     a: "Your profile must be approved by the NextCut admin team before you appear on the marketplace. Make sure your profile is fully complete — including your bio, photo, services, and barber license upload. Once submitted, admin will review your application. You'll see your approval status in the dashboard header.",
@@ -507,7 +530,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "How does the platform fee work?",
-    a: "The platform fee is a percentage of your service price — 20% for new NextCut clients, 15% for repeat clients, and 10% for clients you bring via your direct booking link. Tips are always excluded. Cancelled bookings don't generate a fee — only completed, paid bookings count.",
+    a: `The platform fee is a percentage of your service price — ${newPct}% for new NextCut clients, ${repeatPct}% for repeat clients, and ${directPct}% for clients you bring via your direct booking link. Tips are always excluded. Cancelled bookings don't generate a fee — only completed, paid bookings count.`,
   },
   {
     q: "What happens if I haven't finished Stripe setup?",
@@ -519,13 +542,14 @@ const FAQ_ITEMS = [
   },
   {
     q: "What is a direct booking link and why does it matter?",
-    a: "Your direct booking link is a unique URL to your profile that you can share with existing clients. When clients book through that link, NextCut recognizes them as barber-direct, which means the commission drops from 20% to 10%. It's the fastest way to improve your margins on clients you already have. Find your link in the Overview tab.",
+    a: `Your direct booking link is a unique URL to your profile that you can share with existing clients. When clients book through that link, NextCut recognizes them as barber-direct, which means the commission drops from ${newPct}% to ${directPct}%. It's the fastest way to improve your margins on clients you already have. Find your link in the Overview tab.`,
   },
   {
     q: "Can I change my prices after I'm live?",
     a: "Yes — you can update your service prices at any time in the Services tab. Changes apply to new bookings only, not bookings already confirmed at the old price. Review your prices regularly and raise them as your rating and demand justify it.",
   },
 ];
+};
 
 // ─────────────────────────────────────────────────────────────
 // Content renderers
@@ -811,8 +835,8 @@ function BarberStatusSummary({ barber }) {
 // Table of contents — optional navigation aid
 // ─────────────────────────────────────────────────────────────
 
-function TableOfContents() {
-  const titles = SECTIONS.map(s => s.title);
+function TableOfContents({ sections }) {
+  const titles = sections.map(s => s.title);
   return (
     <div className="bg-secondary rounded-2xl p-4">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">In This Guide</p>
@@ -839,6 +863,12 @@ function TableOfContents() {
 // ─────────────────────────────────────────────────────────────
 
 export default function BarberInfoTab({ barber }) {
+  const [rates, setRates] = useState(null);
+  useEffect(() => { getCommissionRules().then(setRates); }, []);
+
+  const sections = getSections(rates);
+  const faqItems = getFaqItems(rates);
+
   return (
     <div className="space-y-5">
       {/* Page header */}
@@ -853,10 +883,10 @@ export default function BarberInfoTab({ barber }) {
       <BarberStatusSummary barber={barber} />
 
       {/* Table of contents */}
-      <TableOfContents />
+      <TableOfContents sections={sections} />
 
       {/* All guide sections */}
-      {SECTIONS.map(section => (
+      {sections.map(section => (
         <Section key={section.id} section={section} />
       ))}
 
@@ -872,7 +902,7 @@ export default function BarberInfoTab({ barber }) {
           </div>
         </div>
         <div className="p-5 space-y-2">
-          {FAQ_ITEMS.map(item => (
+          {faqItems.map(item => (
             <FAQItem key={item.q} q={item.q} a={item.a} />
           ))}
         </div>
