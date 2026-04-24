@@ -53,8 +53,26 @@ Deno.serve(async (req) => {
     if (!service) return Response.json({ error: 'Service not found' }, { status: 404 });
     if (service.active === false) return Response.json({ error: 'Service is no longer available' }, { status: 400 });
 
-    if (!barber.stripe_account_id || !barber.payouts_enabled) {
-      return Response.json({ error: 'Barber has not completed Stripe setup' }, { status: 400 });
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), { apiVersion: '2024-06-20' });
+
+    if (!barber.stripe_account_id) {
+      return Response.json({ error: 'This barber has not connected Stripe yet. Online payments are not available.' }, { status: 400 });
+    }
+
+    // If our DB says payouts aren't enabled, do a live check before rejecting —
+    // the webhook may not have fired yet after onboarding
+    if (!barber.payouts_enabled) {
+      const liveAccount = await stripe.accounts.retrieve(barber.stripe_account_id);
+      if (!liveAccount.payouts_enabled || !liveAccount.charges_enabled) {
+        return Response.json({ error: 'Barber\'s Stripe account is not fully set up yet. Please ask them to complete Stripe onboarding.' }, { status: 400 });
+      }
+      // Update our DB so it's in sync
+      await base44.asServiceRole.entities.Barber.update(barber_id, {
+        payouts_enabled: true,
+        stripe_status: 'active',
+        stripe_onboarding_complete: true,
+      });
+      barber.payouts_enabled = true;
     }
 
     // ── 2. Calculate commission server-side ──
@@ -103,9 +121,7 @@ Deno.serve(async (req) => {
     });
 
     // ── 4. Create Stripe Checkout session using price_data (no Stripe Products) ──
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
-      apiVersion: '2024-06-20',
-    });
+    // (stripe may already be initialized above for the live payouts check)
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',

@@ -50,33 +50,42 @@ export default function BarberDashboard() {
         toast.info("Your Stripe session expired. Click 'Resume on Stripe' to continue setup.");
         return;
       }
-      setTimeout(async () => {
+      // Give Stripe a moment to process, then sync — retry up to 3x if still in progress
+      const syncWithRetry = async (attemptsLeft) => {
         try {
           const me = await base44.auth.me();
           const barbers = await base44.entities.Barber.filter({ user_email: me.email });
-          if (barbers.length > 0) {
-            const res = await base44.functions.invoke("stripeConnect", {
-              action: "sync_status",
-              barber_id: barbers[0].id,
-            });
-            if (res.data?.status) {
-              setBarber(prev => prev
-                ? { ...prev, stripe_status: res.data.status, payouts_enabled: res.data.payouts_enabled }
-                : prev
-              );
-              if (res.data.status === "active") {
-                toast.success("🎉 Stripe connected! Payouts are now enabled.");
-              } else if (res.data.status === "verification_needed") {
-                toast.warning("Stripe needs more info before payouts can be enabled. Check the Payouts tab.");
-              } else {
-                toast.info("Stripe setup received. Check the Payouts tab to confirm your status.");
-              }
+          if (barbers.length === 0) return;
+
+          const res = await base44.functions.invoke("stripeConnect", {
+            action: "sync_status",
+            barber_id: barbers[0].id,
+          });
+
+          if (res.data?.status) {
+            setBarber(prev => prev ? {
+              ...prev,
+              stripe_status: res.data.status,
+              payouts_enabled: res.data.payouts_enabled,
+              stripe_onboarding_complete: res.data.charges_enabled && res.data.payouts_enabled,
+            } : prev);
+
+            if (res.data.status === "active") {
+              toast.success("🎉 Stripe connected! Payouts are now enabled.");
+            } else if (res.data.status === "verification_needed") {
+              toast.warning("Stripe needs more info before payouts can be enabled. Check the Payouts tab.");
+            } else if (attemptsLeft > 1) {
+              // Status still pending — retry after a delay
+              setTimeout(() => syncWithRetry(attemptsLeft - 1), 4000);
+            } else {
+              toast.info("Stripe setup in progress. Click 'Check Status' in the Payouts tab once you've finished onboarding.");
             }
           }
         } catch {
           // Silent — don't block UI
         }
-      }, 2000);
+      };
+      setTimeout(() => syncWithRetry(3), 1500);
     }
   }, [location.search]);
 

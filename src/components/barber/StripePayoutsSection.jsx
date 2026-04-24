@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import {
   Zap, RefreshCw, ExternalLink, CheckCircle2, AlertCircle,
-  Clock, DollarSign, Info, ShieldCheck
+  Clock, DollarSign, Info, ShieldCheck, LayoutDashboard
 } from "lucide-react";
 import { getCommissionRules } from "@/lib/commissionRules";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ const STATUS_CONFIG = {
     icon: AlertCircle,
     iconColor: "text-slate-400",
     headline: "Connect Stripe to receive online payments",
-    body: "NextCut uses Stripe to verify your identity and deposit earnings directly into your bank account. Stripe does not control your service prices — those are set here in your Services tab. Clicking 'Connect Stripe' will open Stripe's secure hosted form where you'll enter your banking and identity details.",
+    body: "NextCut uses Stripe to verify your identity and deposit earnings directly into your bank account. Stripe does not control your service prices — those are set here in your Services tab. Clicking 'Connect Stripe' will open Stripe's secure hosted form.",
     cta: "Connect Stripe",
     ctaVariant: "default",
     nextStep: "You'll be taken to Stripe's secure onboarding page. Complete your identity and banking info, then return here.",
@@ -28,7 +28,7 @@ const STATUS_CONFIG = {
     icon: AlertCircle,
     iconColor: "text-orange-500",
     headline: "Finish your Stripe setup to get paid",
-    body: "You started Stripe onboarding but didn't complete it. Click below to return to Stripe and finish entering your banking and identity information. Your NextCut service prices are not affected.",
+    body: "You started Stripe onboarding but didn't complete it. Click below to return to Stripe and finish entering your banking and identity information.",
     cta: "Continue Stripe Setup",
     ctaVariant: "default",
     nextStep: "Return to Stripe's onboarding page and complete all required steps.",
@@ -40,7 +40,7 @@ const STATUS_CONFIG = {
     icon: Clock,
     iconColor: "text-amber-500",
     headline: "Stripe setup is in progress",
-    body: "You've been redirected to Stripe's onboarding form. Once you've completed all steps on Stripe's side, click 'Check Status' below so NextCut can confirm your payouts are enabled.",
+    body: "You've started the Stripe onboarding. If you haven't finished yet, click 'Resume on Stripe' below. Once you've completed all steps, click 'Check Status' to activate payouts.",
     cta: "Resume on Stripe",
     ctaVariant: "outline",
     nextStep: "Click 'Check Status' after finishing Stripe's onboarding steps to activate payouts.",
@@ -58,13 +58,13 @@ const STATUS_CONFIG = {
     nextStep: "Complete the outstanding verification items on Stripe, then click 'Check Status'.",
   },
   active: {
-    label: "Payouts Enabled",
+    label: "Payouts Enabled ✓",
     badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
     banner: "bg-emerald-50 border-emerald-200",
     icon: CheckCircle2,
     iconColor: "text-emerald-500",
     headline: "You're set up and ready to receive payouts!",
-    body: "Your Stripe account is verified and connected. When clients pay online, NextCut processes the payment and deposits your earnings directly to your bank via Stripe. Your service prices are always set here in NextCut — not in Stripe.",
+    body: "Your Stripe account is verified and connected. When clients pay online, NextCut processes the payment and transfers your earnings directly to your bank. Your service prices are always set here in NextCut — not in Stripe.",
     cta: null,
     nextStep: null,
   },
@@ -73,11 +73,22 @@ const STATUS_CONFIG = {
 export default function StripePayoutsSection({ barber, bookings, onBarberUpdate }) {
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [localBarber, setLocalBarber] = useState(barber);
   const [rates, setRates] = useState(null);
+  const [requirements, setRequirements] = useState(null);
 
   useEffect(() => { setLocalBarber(barber); }, [barber]);
   useEffect(() => { getCommissionRules().then(setRates); }, []);
+
+  // Auto-sync once on mount if status isn't conclusive yet
+  useEffect(() => {
+    const status = barber?.stripe_status;
+    if (status === 'onboarding_in_progress' || status === 'onboarding_required') {
+      handleSyncStatus(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stripeStatus = localBarber?.stripe_status || "not_connected";
   const cfg = STATUS_CONFIG[stripeStatus] || STATUS_CONFIG.not_connected;
@@ -92,45 +103,87 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
   const pendingEarnings = completedUnpaid.reduce((s, b) => s + (b.barber_earnings ?? 0), 0);
   const totalPlatformFees = completedPaid.reduce((s, b) => s + (b.platform_fee ?? 0), 0);
 
+  const updateBarberState = (updates) => {
+    const updated = { ...localBarber, ...updates };
+    setLocalBarber(updated);
+    onBarberUpdate?.(updated);
+  };
+
   const handleConnectStripe = async () => {
     setConnecting(true);
     try {
+      // If they already have a stripe_account_id but setup isn't done, resume onboarding
       const action = localBarber?.stripe_account_id ? "get_onboarding_link" : "create_account";
       const res = await base44.functions.invoke("stripeConnect", { action, barber_id: localBarber.id });
+
       if (res.data?.url) {
-        const updated = { ...localBarber, stripe_status: "onboarding_in_progress" };
-        setLocalBarber(updated);
-        onBarberUpdate?.(updated);
-        // Redirect in the same tab so Stripe's return_url brings them back here
+        updateBarberState({ stripe_status: "onboarding_in_progress" });
+        // Full-page redirect so Stripe can return back via return_url
         window.location.href = res.data.url;
       } else {
         toast.error("Could not start Stripe onboarding. Please try again.");
+        console.error("[StripePayouts] No URL in response:", res.data);
       }
     } catch (err) {
-      toast.error("Stripe connect failed: " + err.message);
+      toast.error("Stripe connect failed: " + (err.message || "Unknown error"));
+      console.error("[StripePayouts] connect error:", err);
     } finally {
       setConnecting(false);
     }
   };
 
-  const handleSyncStatus = async () => {
-    setSyncing(true);
+  const handleSyncStatus = async (silent = false) => {
+    if (!silent) setSyncing(true);
     try {
-      const res = await base44.functions.invoke("stripeConnect", { action: "sync_status", barber_id: localBarber.id });
+      const res = await base44.functions.invoke("stripeConnect", {
+        action: "sync_status",
+        barber_id: localBarber.id,
+      });
+
       if (res.data?.status) {
-        const updated = { ...localBarber, stripe_status: res.data.status, payouts_enabled: res.data.payouts_enabled };
-        setLocalBarber(updated);
-        onBarberUpdate?.(updated);
-        if (res.data.status === "active") {
-          toast.success("🎉 Payouts are now enabled!");
-        } else {
-          toast.success("Status synced.");
+        updateBarberState({
+          stripe_status: res.data.status,
+          payouts_enabled: res.data.payouts_enabled,
+          stripe_onboarding_complete: res.data.charges_enabled && res.data.payouts_enabled,
+        });
+        if (res.data.requirements) setRequirements(res.data.requirements);
+
+        if (!silent) {
+          if (res.data.status === "active") {
+            toast.success("🎉 Payouts are now enabled!");
+          } else if (res.data.status === "verification_needed") {
+            toast.warning("Stripe needs more info before payouts can be enabled.");
+          } else if (res.data.status === "onboarding_in_progress") {
+            toast.info("Still waiting on Stripe. Finish your onboarding and try again.");
+          } else {
+            toast.success("Status updated.");
+          }
         }
       }
     } catch (err) {
-      toast.error("Sync failed: " + err.message);
+      if (!silent) toast.error("Sync failed: " + (err.message || "Unknown error"));
+      console.error("[StripePayouts] sync error:", err);
     } finally {
-      setSyncing(false);
+      if (!silent) setSyncing(false);
+    }
+  };
+
+  const handleOpenDashboard = async () => {
+    setLoadingDashboard(true);
+    try {
+      const res = await base44.functions.invoke("stripeConnect", {
+        action: "get_dashboard_link",
+        barber_id: localBarber.id,
+      });
+      if (res.data?.url) {
+        window.open(res.data.url, "_blank");
+      } else {
+        toast.error("Could not open Stripe dashboard.");
+      }
+    } catch (err) {
+      toast.error("Could not open Stripe dashboard: " + (err.message || "Unknown error"));
+    } finally {
+      setLoadingDashboard(false);
     }
   };
 
@@ -149,12 +202,12 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
             <Button
               size="sm"
               variant="ghost"
-              onClick={handleSyncStatus}
+              onClick={() => handleSyncStatus(false)}
               disabled={syncing}
               className="h-7 text-xs gap-1 text-muted-foreground"
             >
               <RefreshCw className={`w-3 h-3 ${syncing ? "animate-spin" : ""}`} />
-              {syncing ? "Syncing..." : "Sync Status"}
+              {syncing ? "Syncing..." : "Sync"}
             </Button>
           )}
           <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${cfg.badge}`}>
@@ -178,6 +231,18 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
           </div>
         </div>
 
+        {/* Requirements warning */}
+        {requirements?.currently_due?.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <p className="text-xs font-semibold text-red-700 mb-1">Outstanding requirements:</p>
+            <ul className="text-xs text-red-600 space-y-0.5">
+              {requirements.currently_due.map(req => (
+                <li key={req}>• {req.replace(/_/g, " ")}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2">
           {cfg.cta && (
@@ -197,15 +262,32 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
               {connecting ? "Opening Stripe..." : cfg.cta}
             </Button>
           )}
-          {(stripeStatus === "onboarding_in_progress" || stripeStatus === "verification_needed") && (
+
+          {(stripeStatus === "onboarding_in_progress" || stripeStatus === "verification_needed" || stripeStatus === "onboarding_required") && (
             <Button
               variant="outline"
-              onClick={handleSyncStatus}
+              onClick={() => handleSyncStatus(false)}
               disabled={syncing}
               className="gap-2"
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Checking..." : "Check Status"}
+            </Button>
+          )}
+
+          {isActive && (
+            <Button
+              variant="outline"
+              onClick={handleOpenDashboard}
+              disabled={loadingDashboard}
+              className="gap-2"
+            >
+              {loadingDashboard ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <LayoutDashboard className="w-4 h-4" />
+              )}
+              {loadingDashboard ? "Opening..." : "Stripe Dashboard"}
             </Button>
           )}
         </div>
@@ -259,10 +341,12 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
           <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <span>
             Commission rates: {rates ? (
-              <><strong>{(rates.new_nextcut_lead * 100).toFixed(0)}%</strong> new NextCut clients · <strong>{(rates.repeat_client * 100).toFixed(0)}%</strong> repeat clients · <strong>{(rates.barber_direct_client * 100).toFixed(0)}%</strong> your own clients. </>
-            ) : (
-              "Loading rates... "
-            )}
+              <>
+                <strong>{(rates.new_nextcut_lead * 100).toFixed(0)}%</strong> new NextCut clients ·{" "}
+                <strong>{(rates.repeat_client * 100).toFixed(0)}%</strong> repeat clients ·{" "}
+                <strong>{(rates.barber_direct_client * 100).toFixed(0)}%</strong> your own clients.{" "}
+              </>
+            ) : "Loading rates... "}
             Tips are always <strong>100% yours</strong> and never shared with the platform.
           </span>
         </div>

@@ -94,26 +94,39 @@ export default function BookingModal({ open, onClose, barber, services }) {
   // Pay online via Stripe Checkout
   const handlePayOnline = async () => {
     setLoading(true);
-    const payload = await buildBookingPayload();
-    if (!payload) { setLoading(false); return; }
+    try {
+      const payload = await buildBookingPayload();
+      if (!payload) { setLoading(false); return; }
 
-    // Only send booking context — server re-fetches authoritative price from DB
-    const res = await base44.functions.invoke("createCheckoutSession", {
-      barber_id: payload.barber_id,
-      service_id: payload.service_id,
-      date: payload.date,
-      time: payload.time,
-      notes: payload.notes,
-      commission_type: payload.commission_type,
-      commission_rate: payload.commission_rate,
-      customer_source: payload.customer_source,
-      is_repeat_client: payload.is_repeat_client,
-      referred_by_barber_id: payload.referred_by_barber_id,
-      success_url: `${window.location.origin}/my-bookings?payment=success`,
-      cancel_url: `${window.location.origin}/barber/${barber.id}?payment=cancelled`,
-    });
+      // Only send booking context — server re-fetches authoritative price from DB
+      const res = await base44.functions.invoke("createCheckoutSession", {
+        barber_id: payload.barber_id,
+        service_id: payload.service_id,
+        date: payload.date,
+        time: payload.time,
+        notes: payload.notes,
+        commission_type: payload.commission_type,
+        commission_rate: payload.commission_rate,
+        customer_source: payload.customer_source,
+        is_repeat_client: payload.is_repeat_client,
+        referred_by_barber_id: payload.referred_by_barber_id,
+        success_url: `${window.location.origin}/my-bookings?payment=success`,
+        cancel_url: `${window.location.origin}/barber/${barber.id}?payment=cancelled`,
+      });
 
-    window.location.href = res.data.checkout_url;
+      const checkoutUrl = res.data?.checkout_url;
+      if (!checkoutUrl) {
+        const errMsg = res.data?.error || "Could not create checkout session. Please try again.";
+        alert(errMsg);
+        setLoading(false);
+        return;
+      }
+
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      alert("Payment setup failed: " + (err.message || "Unknown error. Please try again."));
+      setLoading(false);
+    }
   };
 
   // Book without online payment (in-person)
