@@ -41,8 +41,12 @@ export default function BookingModal({ open, onClose, barber, services }) {
   }, [open, barber]);
 
   const loadExistingBookings = async () => {
-    const bookings = await base44.entities.Booking.filter({ barber_id: barber.id, status: "confirmed" });
-    setExistingBookings(bookings);
+    // Load both confirmed bookings AND pending (Stripe in-progress) to block those slots too
+    const [confirmed, pending] = await Promise.all([
+      base44.entities.Booking.filter({ barber_id: barber.id, status: "confirmed" }),
+      base44.entities.Booking.filter({ barber_id: barber.id, status: "pending" }),
+    ]);
+    setExistingBookings([...confirmed, ...pending]);
   };
 
   const getAvailableSlots = () => {
@@ -175,6 +179,11 @@ export default function BookingModal({ open, onClose, barber, services }) {
 
             {step === 1 && (
               <div className="space-y-2 mt-4">
+                {services.length === 0 && (
+                  <p className="text-center text-muted-foreground py-10 text-sm">
+                    This barber has no active services yet.
+                  </p>
+                )}
                 {services.map((service) => (
                   <button
                     key={service.id}

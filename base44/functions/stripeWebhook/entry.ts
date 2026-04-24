@@ -200,8 +200,20 @@ Deno.serve(async (req) => {
         const paymentIntent = event.data.object;
         const bookingId = paymentIntent.metadata?.booking_id;
         const failureMessage = paymentIntent.last_payment_error?.message ?? 'Payment failed';
-        // Future: notify client, mark booking as payment_failed
         console.warn(`[webhook] payment_intent.payment_failed: booking_id=${bookingId} reason="${failureMessage}"`);
+
+        // Cancel the pending booking so it doesn't block the slot or confuse the client
+        if (bookingId) {
+          try {
+            const failedBookings = await base44.asServiceRole.entities.Booking.filter({ id: bookingId });
+            if (failedBookings.length > 0 && failedBookings[0].status === 'pending') {
+              await base44.asServiceRole.entities.Booking.update(bookingId, { status: 'cancelled' });
+              console.log(`[webhook] booking ${bookingId} cancelled due to payment failure`);
+            }
+          } catch (e) {
+            console.error(`[webhook] failed to cancel booking ${bookingId}:`, e.message);
+          }
+        }
         break;
       }
 

@@ -70,12 +70,12 @@ export default function MyBookings() {
     if (status === "completed") {
       const booking = bookings.find(b => b.id === bookingId);
       if (booking?.barber_id) {
-        const barbers = await base44.entities.Barber.filter({ id: booking.barber_id });
-        if (barbers.length > 0) {
+        try {
+          const barber = await base44.entities.Barber.get(booking.barber_id);
           await base44.entities.Barber.update(booking.barber_id, {
-            total_bookings: (barbers[0].total_bookings || 0) + 1,
+            total_bookings: (barber.total_bookings || 0) + 1,
           });
-        }
+        } catch (_) { /* non-critical — don't block the status update */ }
       }
     }
   };

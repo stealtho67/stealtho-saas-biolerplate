@@ -45,20 +45,13 @@ Deno.serve(async (req) => {
     } = body;
 
     // ── 1. Fetch authoritative data from DB (never trust client-sent prices) ──
-    const [barbers, services] = await Promise.all([
-      base44.asServiceRole.entities.Barber.filter({ id: barber_id }),
-      base44.asServiceRole.entities.Service.filter({ id: service_id }),
-    ]);
+    let barber, service;
+    try { barber = await base44.asServiceRole.entities.Barber.get(barber_id); } catch (_) {}
+    try { service = await base44.asServiceRole.entities.Service.get(service_id); } catch (_) {}
 
-    if (!barbers.length) {
-      return Response.json({ error: 'Barber not found' }, { status: 404 });
-    }
-    if (!services.length) {
-      return Response.json({ error: 'Service not found' }, { status: 404 });
-    }
-
-    const barber = barbers[0];
-    const service = services[0];
+    if (!barber) return Response.json({ error: 'Barber not found' }, { status: 404 });
+    if (!service) return Response.json({ error: 'Service not found' }, { status: 404 });
+    if (service.active === false) return Response.json({ error: 'Service is no longer available' }, { status: 400 });
 
     if (!barber.stripe_account_id || !barber.payouts_enabled) {
       return Response.json({ error: 'Barber has not completed Stripe setup' }, { status: 400 });

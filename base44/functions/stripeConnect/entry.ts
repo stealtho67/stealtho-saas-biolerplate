@@ -51,18 +51,18 @@ Deno.serve(async (req) => {
 
     if (action === 'get_onboarding_link') {
       // Resume onboarding for a barber who already has an account
-      let barbers;
+      let barberRecord;
       try {
-        barbers = await base44.asServiceRole.entities.Barber.filter({ id: barber_id });
+        barberRecord = await base44.asServiceRole.entities.Barber.get(barber_id);
       } catch {
         return Response.json({ error: 'Barber not found' }, { status: 404 });
       }
-      if (!barbers.length || !barbers[0].stripe_account_id) {
+      if (!barberRecord?.stripe_account_id) {
         return Response.json({ error: 'No Stripe account found' }, { status: 404 });
       }
 
       const accountLink = await stripe.accountLinks.create({
-        account: barbers[0].stripe_account_id,
+        account: barberRecord.stripe_account_id,
         refresh_url: `${appUrl}/dashboard?stripe=refresh`,
         return_url: `${appUrl}/dashboard?stripe=complete`,
         type: 'account_onboarding',
@@ -73,17 +73,17 @@ Deno.serve(async (req) => {
 
     if (action === 'sync_status') {
       // Sync Stripe account status back to our DB
-      let barbers;
+      let barberRecord;
       try {
-        barbers = await base44.asServiceRole.entities.Barber.filter({ id: barber_id });
+        barberRecord = await base44.asServiceRole.entities.Barber.get(barber_id);
       } catch {
         return Response.json({ status: 'not_connected' });
       }
-      if (!barbers.length || !barbers[0].stripe_account_id) {
+      if (!barberRecord?.stripe_account_id) {
         return Response.json({ status: 'not_connected' });
       }
 
-      const account = await stripe.accounts.retrieve(barbers[0].stripe_account_id);
+      const account = await stripe.accounts.retrieve(barberRecord.stripe_account_id);
       const payoutsEnabled = account.payouts_enabled;
       const chargesEnabled = account.charges_enabled;
       const hasRequirements = account.requirements?.currently_due?.length > 0 || account.requirements?.past_due?.length > 0;
