@@ -65,8 +65,14 @@ export default function BarberDashboardPreview() {
       return;
     }
 
-    const barbers = await base44.entities.Barber.filter({ id });
-    const b = barbers.length > 0 ? { ...BLANK_BARBER, ...barbers[0] } : { ...BLANK_BARBER, id };
+    let barberData = null;
+    try { barberData = await base44.entities.Barber.get(id); } catch (_) {}
+    // Fallback: filter by id in case get() fails
+    if (!barberData) {
+      const barbers = await base44.entities.Barber.list("-created_date", 500);
+      barberData = barbers.find(b => b.id === id) || null;
+    }
+    const b = barberData ? { ...BLANK_BARBER, ...barberData } : { ...BLANK_BARBER, id };
 
     setBarber(b);
 

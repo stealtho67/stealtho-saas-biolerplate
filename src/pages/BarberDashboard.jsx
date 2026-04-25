@@ -102,11 +102,12 @@ export default function BarberDashboard() {
       if (me.role === "admin") {
         navigate("/admin", { replace: true });
       } else {
-        // Everyone else (including barbers whose record creation failed) → apply
-        navigate(me.role === "barber" ? "/apply" : "/", { replace: true });
+        // No barber record → apply
+        navigate("/apply", { replace: true });
       }
       return;
     }
+    // All barbers with a record (pending, active, suspended) get to see their dashboard
     const b = barbers[0];
     setBarber(b);
     const [allBookings, svcList] = await Promise.all([

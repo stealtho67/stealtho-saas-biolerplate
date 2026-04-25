@@ -46,6 +46,12 @@ const STRIPE_STATUS = {
     color: "text-orange-600",
     bg: "bg-orange-50 border-orange-200",
   },
+  verification_needed: {
+    label: "Stripe Verification Needed",
+    icon: AlertTriangle,
+    color: "text-orange-600",
+    bg: "bg-orange-50 border-orange-200",
+  },
   active: {
     label: "Payouts Enabled",
     icon: ShieldCheck,
