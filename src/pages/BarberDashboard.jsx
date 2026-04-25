@@ -107,7 +107,7 @@ export default function BarberDashboard() {
       }
       return;
     }
-    // All barbers with a record (pending, active, suspended) get to see their dashboard
+    // All barbers with a record (pending, action_required, active, suspended) see their dashboard
     const b = barbers[0];
     setBarber(b);
     const [allBookings, svcList] = await Promise.all([

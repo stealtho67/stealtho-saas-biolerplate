@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, AlertTriangle, XCircle, Ban, ShieldCheck, Zap } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Ban, ShieldCheck, Zap } from "lucide-react";
 
 const APPLICATION_STATUS = {
   pending: {
@@ -8,6 +8,14 @@ const APPLICATION_STATUS = {
     color: "text-amber-600",
     bg: "bg-amber-50 border-amber-200",
     iconBg: "bg-amber-100",
+  },
+  action_required: {
+    label: "Action Required",
+    description: "Admin has flagged your profile. You are not visible to clients until the required steps are completed. Check the note below.",
+    icon: AlertTriangle,
+    color: "text-orange-600",
+    bg: "bg-orange-50 border-orange-200",
+    iconBg: "bg-orange-100",
   },
   active: {
     label: "Approved & Active",
@@ -85,6 +93,13 @@ export default function StatusHeader({ barber }) {
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{appStatus.description}</p>
+          {/* Admin note — shown prominently when action is required */}
+          {barber.status === "action_required" && barber.admin_note && (
+            <div className="mt-3 p-3 bg-white border border-orange-300 rounded-xl">
+              <p className="text-xs font-bold text-orange-700 mb-1 uppercase tracking-wide">What you need to complete:</p>
+              <p className="text-sm text-orange-900 leading-relaxed font-medium">{barber.admin_note}</p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -64,10 +64,16 @@
       "type": "string",
       "enum": [
         "pending",
+        "action_required",
         "active",
         "suspended"
       ],
-      "default": "pending"
+      "default": "pending",
+      "description": "Barber account status. Only 'active' barbers are publicly visible."
+    },
+    "admin_note": {
+      "type": "string",
+      "description": "Admin-facing note shown to barber when action is required. Set when admin sends barber back to action_required."
     },
     "working_hours": {
       "type": "object"
