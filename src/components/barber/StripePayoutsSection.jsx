@@ -112,17 +112,26 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
   const handleConnectStripe = async () => {
     setConnecting(true);
     try {
-      // If they already have a stripe_account_id but setup isn't done, resume onboarding
-      const action = localBarber?.stripe_account_id ? "get_onboarding_link" : "create_account";
-      const res = await base44.functions.invoke("stripeConnect", { action, barber_id: localBarber.id });
+      // Unified action — backend handles create vs resume automatically
+      const res = await base44.functions.invoke("stripeConnect", {
+        action: "connect",
+        barber_id: localBarber.id,
+      });
 
       if (res.data?.url) {
         updateBarberState({ stripe_status: "onboarding_in_progress" });
-        // Full-page redirect so Stripe can return back via return_url
+        // Full-page redirect — Stripe returns via return_url / refresh_url
         window.location.href = res.data.url;
+      } else if (res.data?.error) {
+        // e.g. stale account was reset — tell user to retry
+        toast.error(res.data.error);
+        // If the account was reset on Stripe's side, clear local state so button resets
+        if (res.status === 409) {
+          updateBarberState({ stripe_account_id: null, stripe_status: "not_connected" });
+        }
       } else {
         toast.error("Could not start Stripe onboarding. Please try again.");
-        console.error("[StripePayouts] No URL in response:", res.data);
+        console.error("[StripePayouts] unexpected response:", res.data);
       }
     } catch (err) {
       toast.error("Stripe connect failed: " + (err.message || "Unknown error"));

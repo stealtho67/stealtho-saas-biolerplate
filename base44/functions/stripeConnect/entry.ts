@@ -2,14 +2,30 @@
  * NextCut — Stripe Connect
  *
  * Actions:
- *   create_account      — create a new Stripe Express account + onboarding link
- *   get_onboarding_link — resume onboarding for an existing account
- *   get_dashboard_link  — open Stripe Express dashboard for an active account
- *   sync_status         — pull live Stripe account status into our DB
+ *   connect          — unified: create account if needed, then return onboarding link (idempotent)
+ *   get_dashboard_link — open Stripe Express dashboard for an active account
+ *   sync_status      — pull live Stripe account status into our DB
+ *
+ * Legacy actions still supported (map to connect):
+ *   create_account, get_onboarding_link
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import Stripe from 'npm:stripe@14.21.0';
+
+/** Force the APP_URL to HTTPS — Stripe Live mode rejects HTTP return/refresh URLs */
+function httpsUrl(base, path) {
+  let url = (base || '').trim().replace(/\/$/, '');
+  // Force HTTPS — Stripe live mode requires it
+  if (url.startsWith('http://')) {
+    url = 'https://' + url.slice(7);
+  }
+  // If no protocol at all, prepend https://
+  if (!url.startsWith('https://')) {
+    url = 'https://' + url;
+  }
+  return url + path;
+}
 
 Deno.serve(async (req) => {
   try {
@@ -22,100 +38,111 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, barber_id } = body;
 
+    if (!barber_id) {
+      return Response.json({ error: 'barber_id is required' }, { status: 400 });
+    }
+
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
       apiVersion: '2024-06-20',
     });
 
-    const appUrl = Deno.env.get('APP_URL') || 'https://app.base44.com';
+    const rawAppUrl = Deno.env.get('APP_URL') || '';
+    const returnUrl = httpsUrl(rawAppUrl, '/dashboard?stripe=complete');
+    const refreshUrl = httpsUrl(rawAppUrl, '/dashboard?stripe=refresh');
 
-    // ── CREATE ACCOUNT ─────────────────────────────────────────────────────
-    if (action === 'create_account') {
-      // Check if barber already has an account (idempotent)
+    console.log(`[stripeConnect] action=${action} barber_id=${barber_id} return_url=${returnUrl}`);
+
+    // ── CONNECT (unified — create if needed, then onboarding link) ─────────
+    // Also handles legacy action names: create_account, get_onboarding_link
+    if (action === 'connect' || action === 'create_account' || action === 'get_onboarding_link') {
       let barberRecord;
-      try { barberRecord = await base44.asServiceRole.entities.Barber.get(barber_id); } catch (_) {}
-      if (!barberRecord) return Response.json({ error: 'Barber not found' }, { status: 404 });
-
-      // If they already have a Stripe account ID, just give them a new onboarding link
-      if (barberRecord.stripe_account_id) {
-        const accountLink = await stripe.accountLinks.create({
-          account: barberRecord.stripe_account_id,
-          refresh_url: `${appUrl}/dashboard?stripe=refresh`,
-          return_url: `${appUrl}/dashboard?stripe=complete`,
-          type: 'account_onboarding',
-          collect: 'eventually_due',
-        });
-        return Response.json({ url: accountLink.url, account_id: barberRecord.stripe_account_id });
+      try {
+        barberRecord = await base44.asServiceRole.entities.Barber.get(barber_id);
+      } catch (_) {}
+      if (!barberRecord) {
+        return Response.json({ error: 'Barber not found' }, { status: 404 });
       }
 
-      // Create a new Stripe Express account
-      const account = await stripe.accounts.create({
-        type: 'express',
-        country: 'US',
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-        business_type: 'individual',
-        business_profile: {
-          mcc: '7230', // Beauty shops
-          url: `${appUrl}/barber/${barber_id}`,
-          product_description: 'Barber services via NextCut marketplace',
-        },
-        settings: {
-          payouts: {
-            schedule: { interval: 'daily' },
-          },
-        },
-        metadata: {
-          barber_id,
-          user_email: user.email,
-          platform: 'nextcut',
-        },
-      });
+      let stripeAccountId = barberRecord.stripe_account_id;
 
-      // Persist the account ID immediately so we can resume if user abandons
-      await base44.asServiceRole.entities.Barber.update(barber_id, {
-        stripe_account_id: account.id,
-        stripe_status: 'onboarding_in_progress',
-        stripe_onboarding_complete: false,
-        payouts_enabled: false,
-      });
+      // If no account yet, create one
+      if (!stripeAccountId) {
+        console.log(`[stripeConnect] creating new Stripe Express account for barber ${barber_id}`);
+        const account = await stripe.accounts.create({
+          type: 'express',
+          country: 'US',
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+          business_type: 'individual',
+          business_profile: {
+            mcc: '7230', // Beauty shops
+            url: httpsUrl(rawAppUrl, `/barber/${barber_id}`),
+            product_description: 'Barber services via NextCut marketplace',
+          },
+          settings: {
+            payouts: {
+              schedule: { interval: 'daily' },
+            },
+          },
+          metadata: {
+            barber_id,
+            user_email: user.email,
+            platform: 'nextcut',
+          },
+        });
+
+        stripeAccountId = account.id;
+        console.log(`[stripeConnect] created Stripe account ${stripeAccountId}`);
+
+        // Persist immediately so we can resume if barber abandons
+        await base44.asServiceRole.entities.Barber.update(barber_id, {
+          stripe_account_id: stripeAccountId,
+          stripe_status: 'onboarding_in_progress',
+          stripe_onboarding_complete: false,
+          payouts_enabled: false,
+        });
+      } else {
+        console.log(`[stripeConnect] resuming onboarding for existing account ${stripeAccountId}`);
+        // Verify the account still exists on Stripe's side before generating a link
+        try {
+          await stripe.accounts.retrieve(stripeAccountId);
+        } catch (err) {
+          if (err.code === 'account_invalid' || err.statusCode === 404) {
+            // Account was deleted on Stripe — reset and create fresh
+            console.warn(`[stripeConnect] account ${stripeAccountId} invalid, resetting`);
+            await base44.asServiceRole.entities.Barber.update(barber_id, {
+              stripe_account_id: null,
+              stripe_status: 'not_connected',
+              stripe_onboarding_complete: false,
+              payouts_enabled: false,
+            });
+            return Response.json({ error: 'Stripe account was reset. Please try connecting again.' }, { status: 409 });
+          }
+          throw err;
+        }
+      }
 
       // Generate the hosted onboarding link
       const accountLink = await stripe.accountLinks.create({
-        account: account.id,
-        refresh_url: `${appUrl}/dashboard?stripe=refresh`,
-        return_url: `${appUrl}/dashboard?stripe=complete`,
+        account: stripeAccountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
         type: 'account_onboarding',
         collect: 'eventually_due',
       });
 
-      return Response.json({ url: accountLink.url, account_id: account.id });
-    }
-
-    // ── GET ONBOARDING LINK ────────────────────────────────────────────────
-    if (action === 'get_onboarding_link') {
-      let barberRecord;
-      try { barberRecord = await base44.asServiceRole.entities.Barber.get(barber_id); } catch (_) {}
-      if (!barberRecord?.stripe_account_id) {
-        return Response.json({ error: 'No Stripe account found' }, { status: 404 });
-      }
-
-      const accountLink = await stripe.accountLinks.create({
-        account: barberRecord.stripe_account_id,
-        refresh_url: `${appUrl}/dashboard?stripe=refresh`,
-        return_url: `${appUrl}/dashboard?stripe=complete`,
-        type: 'account_onboarding',
-        collect: 'eventually_due',
-      });
-
-      return Response.json({ url: accountLink.url });
+      console.log(`[stripeConnect] onboarding link created for ${stripeAccountId}`);
+      return Response.json({ url: accountLink.url, account_id: stripeAccountId });
     }
 
     // ── GET DASHBOARD LINK (active accounts only) ──────────────────────────
     if (action === 'get_dashboard_link') {
       let barberRecord;
-      try { barberRecord = await base44.asServiceRole.entities.Barber.get(barber_id); } catch (_) {}
+      try {
+        barberRecord = await base44.asServiceRole.entities.Barber.get(barber_id);
+      } catch (_) {}
       if (!barberRecord?.stripe_account_id) {
         return Response.json({ error: 'No Stripe account found' }, { status: 404 });
       }
@@ -127,7 +154,9 @@ Deno.serve(async (req) => {
     // ── SYNC STATUS ────────────────────────────────────────────────────────
     if (action === 'sync_status') {
       let barberRecord;
-      try { barberRecord = await base44.asServiceRole.entities.Barber.get(barber_id); } catch (_) {}
+      try {
+        barberRecord = await base44.asServiceRole.entities.Barber.get(barber_id);
+      } catch (_) {}
       if (!barberRecord?.stripe_account_id) {
         return Response.json({ status: 'not_connected', payouts_enabled: false });
       }
@@ -136,9 +165,8 @@ Deno.serve(async (req) => {
       try {
         account = await stripe.accounts.retrieve(barberRecord.stripe_account_id);
       } catch (stripeErr) {
-        // Account may have been deleted on Stripe's side
         console.error('[stripeConnect] sync_status retrieve error:', stripeErr.message);
-        if (stripeErr.code === 'account_invalid') {
+        if (stripeErr.code === 'account_invalid' || stripeErr.statusCode === 404) {
           await base44.asServiceRole.entities.Barber.update(barber_id, {
             stripe_account_id: null,
             stripe_status: 'not_connected',
@@ -174,6 +202,8 @@ Deno.serve(async (req) => {
         stripe_onboarding_complete: payoutsEnabled && chargesEnabled,
       });
 
+      console.log(`[stripeConnect] sync_status barber=${barber_id} → ${newStatus} payouts=${payoutsEnabled}`);
+
       return Response.json({
         status: newStatus,
         payouts_enabled: payoutsEnabled,
@@ -186,10 +216,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    return Response.json({ error: 'Unknown action' }, { status: 400 });
+    return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });
 
   } catch (error) {
-    console.error('[stripeConnect] error:', error.message);
+    console.error('[stripeConnect] error:', error.message, error.type || '');
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

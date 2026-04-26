@@ -37,6 +37,8 @@ export function stripeStatusInfo(stripe_status) {
       return { label: "Onboarding In Progress", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" };
     case "onboarding_required":
       return { label: "Onboarding Required", color: "text-orange-600", bg: "bg-orange-50 border-orange-200" };
+    case "verification_needed":
+      return { label: "Verification Needed", color: "text-red-600", bg: "bg-red-50 border-red-200" };
     case "not_connected":
     default:
       return { label: "Not Connected", color: "text-slate-500", bg: "bg-slate-50 border-slate-200" };
