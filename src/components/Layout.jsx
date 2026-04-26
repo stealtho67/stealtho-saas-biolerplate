@@ -1,15 +1,15 @@
-import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, Calendar, User, Scissors, Menu, X, LogOut, Shield } from "lucide-react";
+import { Outlet, Link, useLocation } from "react-router-dom";
+import { Home, Search, Calendar, User, Scissors, LogOut, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import MobileHeader from "@/components/MobileHeader";
 
 export default function Layout() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [barberProfile, setBarberProfile] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
 
   useEffect(() => {
     loadUser();
@@ -108,57 +108,8 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Mobile Header */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 bg-card border-b border-border sticky top-0 z-50 backdrop-blur-xl bg-card/80">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Scissors className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-heading font-bold text-lg">NextCut</span>
-        </Link>
-        <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </Button>
-      </header>
-
-      {/* Mobile Dropdown Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-14 z-40 bg-background/95 backdrop-blur-sm">
-          <nav className="flex flex-col p-4 gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors ${
-                  isActive(item.path)
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-secondary"
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.label}
-              </Link>
-            ))}
-            {user ? (
-              <button
-                onClick={() => base44.auth.logout()}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-destructive mt-4"
-              >
-                <LogOut className="w-5 h-5" />
-                Sign Out
-              </button>
-            ) : (
-              <button
-                onClick={() => { base44.auth.redirectToLogin(window.location.href); setMobileMenuOpen(false); }}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-primary mt-4"
-              >
-                Sign In
-              </button>
-            )}
-          </nav>
-        </div>
-      )}
+      {/* Mobile Header — context-aware (logo on root tabs, back button on sub-routes) */}
+      <MobileHeader />
 
       {/* Main Content */}
       <main className="flex-1">

@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Textarea } from "@/components/ui/textarea";
 import { format, isPast, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
@@ -14,6 +16,51 @@ import EmptyState from "../components/EmptyState";
 import CollectPaymentModal from "../components/barber/CollectPaymentModal";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
+
+function ReviewContent({ reviewRating, setReviewRating, reviewComment, setReviewComment, onSubmit, submitting }) {
+  return (
+    <div className="space-y-4 px-4 pb-6">
+      <div className="flex justify-center pt-2">
+        <StarRating rating={reviewRating} size="lg" interactive onChange={setReviewRating} />
+      </div>
+      <Textarea
+        placeholder="Share your experience... (optional)"
+        value={reviewComment}
+        onChange={(e) => setReviewComment(e.target.value)}
+        rows={3}
+      />
+      <Button onClick={onSubmit} disabled={submitting} className="w-full h-11">
+        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Review"}
+      </Button>
+    </div>
+  );
+}
+
+function ReviewSheet({ open, onClose, reviewRating, setReviewRating, reviewComment, setReviewComment, onSubmit, submitting }) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Leave a Review</DialogTitle>
+          </DialogHeader>
+          <ReviewContent {...{ reviewRating, setReviewRating, reviewComment, setReviewComment, onSubmit, submitting }} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  return (
+    <Drawer open={open} onOpenChange={onClose}>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle className="font-heading">Leave a Review</DrawerTitle>
+        </DrawerHeader>
+        <ReviewContent {...{ reviewRating, setReviewRating, reviewComment, setReviewComment, onSubmit, submitting }} />
+      </DrawerContent>
+    </Drawer>
+  );
+}
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -64,19 +111,21 @@ export default function MyBookings() {
   const { pulling, pullDistance, refreshing, threshold } = usePullToRefresh(loadData);
 
   const updateStatus = async (bookingId, status) => {
-    await base44.entities.Booking.update(bookingId, { status });
-    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status } : b));
-    // Update barber total_bookings count when completing a booking
-    if (status === "completed") {
-      const booking = bookings.find(b => b.id === bookingId);
-      if (booking?.barber_id) {
-        try {
-          const barber = await base44.entities.Barber.get(booking.barber_id);
-          await base44.entities.Barber.update(booking.barber_id, {
-            total_bookings: (barber.total_bookings || 0) + 1,
-          });
-        } catch (_) { /* non-critical — don't block the status update */ }
+    // Optimistic update — apply immediately, rollback on error
+    const prev = bookings.find(b => b.id === bookingId);
+    setBookings(bs => bs.map(b => b.id === bookingId ? { ...b, status } : b));
+    try {
+      await base44.entities.Booking.update(bookingId, { status });
+      // Update barber total_bookings count when completing a booking (non-critical)
+      if (status === "completed" && prev?.barber_id) {
+        base44.entities.Barber.get(prev.barber_id).then(barber =>
+          base44.entities.Barber.update(prev.barber_id, { total_bookings: (barber.total_bookings || 0) + 1 })
+        ).catch(() => {});
       }
+    } catch {
+      // Rollback on failure
+      setBookings(bs => bs.map(b => b.id === bookingId ? { ...b, status: prev?.status || b.status } : b));
+      toast.error("Failed to update booking. Please try again.");
     }
   };
 
@@ -289,28 +338,17 @@ export default function MyBookings() {
         />
       )}
 
-      {/* Review Modal */}
-      <Dialog open={!!reviewModal} onOpenChange={() => setReviewModal(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-heading">Leave a Review</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="flex justify-center">
-              <StarRating rating={reviewRating} size="lg" interactive onChange={setReviewRating} />
-            </div>
-            <Textarea
-              placeholder="Share your experience... (optional)"
-              value={reviewComment}
-              onChange={(e) => setReviewComment(e.target.value)}
-              rows={3}
-            />
-            <Button onClick={submitReview} disabled={submitting} className="w-full">
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Review"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Review — Drawer on mobile, Dialog on desktop */}
+      <ReviewSheet
+        open={!!reviewModal}
+        onClose={() => { setReviewModal(null); setReviewRating(5); setReviewComment(""); }}
+        reviewRating={reviewRating}
+        setReviewRating={setReviewRating}
+        reviewComment={reviewComment}
+        setReviewComment={setReviewComment}
+        onSubmit={submitReview}
+        submitting={submitting}
+      />
     </div>
   );
 }
