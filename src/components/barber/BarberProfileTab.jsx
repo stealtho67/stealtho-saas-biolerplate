@@ -12,6 +12,14 @@ const STATUS_CONFIG = {
     iconBg: "bg-amber-100",
     icon: Clock,
   },
+  action_required: {
+    label: "Action Required",
+    description: "Admin has flagged your profile — check the note in your Dashboard. You are not visible until resolved.",
+    color: "text-orange-700",
+    bg: "bg-orange-50 border-orange-200",
+    iconBg: "bg-orange-100",
+    icon: AlertTriangle,
+  },
   active: {
     label: "Approved & Active",
     description: "You are approved and visible on the marketplace. Clients can find and book you.",
@@ -33,7 +41,8 @@ const STATUS_CONFIG = {
 const STRIPE_CONFIG = {
   not_connected: { label: "Not Connected", color: "text-slate-500", bg: "bg-slate-100", icon: AlertTriangle },
   onboarding_in_progress: { label: "Setup In Progress", color: "text-amber-600", bg: "bg-amber-100", icon: Clock },
-  onboarding_required: { label: "Verification Needed", color: "text-orange-600", bg: "bg-orange-100", icon: AlertTriangle },
+  onboarding_required: { label: "Onboarding Required", color: "text-orange-600", bg: "bg-orange-100", icon: AlertTriangle },
+  verification_needed: { label: "Verification Needed", color: "text-red-600", bg: "bg-red-100", icon: AlertTriangle },
   active: { label: "Payouts Enabled", color: "text-emerald-600", bg: "bg-emerald-100", icon: ShieldCheck },
 };
 
@@ -72,7 +81,7 @@ export default function BarberProfileTab({ barber, services }) {
   }
 
   const appStatus = STATUS_CONFIG[barber.status] || STATUS_CONFIG.pending;
-  const stripeStatus = STRIPE_CONFIG[barber.stripe_status || "not_connected"];
+  const stripeStatus = STRIPE_CONFIG[barber.stripe_status || "not_connected"] || STRIPE_CONFIG.not_connected;
   const AppIcon = appStatus.icon;
   const StripeIcon = stripeStatus.icon;
   const isFullyLive = barber.status === "active" && barber.payouts_enabled;

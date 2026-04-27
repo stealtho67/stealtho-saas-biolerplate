@@ -31,20 +31,28 @@ export default function BarberProfile() {
   }, [id]);
 
   const loadData = async () => {
-    const barbers = await base44.entities.Barber.filter({ id });
-    // Block access to suspended OR pending barbers (pending = not yet approved)
-    if (barbers.length === 0 || barbers[0].status !== "active") {
+    // Use get() first for reliability, fall back to filter if needed
+    let b;
+    try {
+      b = await base44.entities.Barber.get(id);
+    } catch (_) {
+      const list = await base44.entities.Barber.filter({ id });
+      b = list[0];
+    }
+    // Block access to non-active barbers
+    if (!b || b.status !== "active") {
       setLoading(false);
       return;
     }
-    const b = barbers[0];
     setBarber(b);
 
     const [svcRes, rev] = await Promise.all([
       base44.functions.invoke("manageBarberServices", { action: "listPublic", barberId: id }),
       base44.entities.Review.filter({ barber_id: id }),
     ]);
-    setServices(svcRes.data?.services || []);
+    // Handle both response shapes from manageBarberServices
+    const rawServices = svcRes.data?.services || svcRes.data || [];
+    setServices(Array.isArray(rawServices) ? rawServices : []);
     setReviews(rev.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
     setLoading(false);
   };

@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Clock, CheckCircle2, Loader2, CreditCard, Banknote } from "lucide-react";
+import { toast } from "sonner";
 import { getCommissionRules, resolveCommissionType, calcCommission } from "@/lib/commissionRules";
 import { format, addDays, startOfToday } from "date-fns";
 
@@ -117,14 +118,14 @@ export default function BookingModal({ open, onClose, barber, services }) {
       const checkoutUrl = res.data?.checkout_url;
       if (!checkoutUrl) {
         const errMsg = res.data?.error || "Could not create checkout session. Please try again.";
-        alert(errMsg);
+        toast.error(errMsg);
         setLoading(false);
         return;
       }
 
       window.location.href = checkoutUrl;
     } catch (err) {
-      alert("Payment setup failed: " + (err.message || "Unknown error. Please try again."));
+      toast.error("Payment setup failed: " + (err.message || "Unknown error. Please try again."));
       setLoading(false);
     }
   };
