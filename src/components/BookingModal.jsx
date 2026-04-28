@@ -137,7 +137,7 @@ export default function BookingModal({ open, onClose, barber, services }) {
     if (!payload) { setLoading(false); return; }
     const { user, ...bookingData } = payload;
 
-    await base44.entities.Booking.create({
+    const createdBooking = await base44.entities.Booking.create({
       client_email: user.email,
       client_name: user.full_name,
       ...bookingData,
@@ -152,6 +152,14 @@ export default function BookingModal({ open, onClose, barber, services }) {
       subject: `Booking Confirmed — ${barber.display_name}`,
       body: `Your ${selectedService.service_name} with ${barber.display_name} is confirmed for ${format(selectedDate, "MMMM d, yyyy")} at ${selectedTime}.\n\nPrice: $${selectedService.price} (pay in person)\n\nSee you soon!`
     }).catch(() => {});
+
+    // Fire-and-forget: forward booking to barber's configured delivery destination
+    if (createdBooking?.id) {
+      base44.functions.invoke("forwardBooking", {
+        booking_id: createdBooking.id,
+        barber_id: barber.id,
+      }).catch(() => {});
+    }
 
     setSuccess(true);
     setLoading(false);

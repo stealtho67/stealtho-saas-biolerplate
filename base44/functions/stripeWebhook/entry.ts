@@ -193,6 +193,15 @@ Deno.serve(async (req) => {
             body: `Your payment was successful and your booking is confirmed.\n\nView your bookings: ${Deno.env.get('APP_URL')}/my-bookings`,
           }).catch(() => {});
         }
+
+        // Fire-and-forget: forward booking to barber's configured delivery destination
+        const barberIdMeta = paymentIntent.metadata?.barber_id;
+        if (barberIdMeta) {
+          base44.asServiceRole.functions.invoke('forwardBooking', {
+            booking_id: bookingId,
+            barber_id: barberIdMeta,
+          }).catch((e) => console.warn('[webhook] forwardBooking fire-and-forget failed:', e.message));
+        }
         break;
       }
 

@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import {
   Calendar, DollarSign, Users, Star, TrendingUp, Clock,
   Info, Link2, Copy, LayoutDashboard, UserCircle, Scissors,
-  Images, CreditCard
+  Images, CreditCard, Bell
 } from "lucide-react";
 import { COMMISSION_LABELS, getCommissionRules } from "@/lib/commissionRules";
 import ProfileEditor from "@/components/barber/ProfileEditor";
@@ -14,6 +14,7 @@ import OnboardingChecklist from "@/components/barber/OnboardingChecklist";
 import StripePayoutsSection from "@/components/barber/StripePayoutsSection";
 import StatusHeader from "@/components/barber/StatusHeader";
 import BarberInfoTab from "@/components/barber/BarberInfoTab";
+import BookingDeliveryEditor from "@/components/barber/BookingDeliveryEditor";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +26,7 @@ const TABS = [
   { id: "services", label: "Services", icon: Scissors },
   { id: "portfolio", label: "Portfolio", icon: Images },
   { id: "payouts", label: "Payouts", icon: CreditCard },
+  { id: "delivery", label: "Delivery", icon: Bell },
   { id: "info", label: "Info", icon: Info },
 ];
 
@@ -229,6 +231,18 @@ export default function BarberDashboard() {
           />
         </TabsContent>
 
+        {/* ── DELIVERY TAB ── */}
+        <TabsContent value="delivery">
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <h2 className="font-heading font-semibold mb-1">Booking Delivery</h2>
+            <p className="text-xs text-muted-foreground mb-5">
+              Choose where NextCut sends booking and client info after a booking is made.
+              Your bookings always stay in NextCut — this is an optional extra notification.
+            </p>
+            <BookingDeliveryEditor barber={barber} onSaved={setBarber} />
+          </div>
+        </TabsContent>
+
         {/* ── INFO TAB ── */}
         <TabsContent value="info">
           <BarberInfoTab barber={barber} />
@@ -349,6 +363,9 @@ function OverviewTab({ barber, services, bookings, onNavigate, onBarberUpdate })
         </div>
       )}
 
+      {/* Booking Delivery Status */}
+      <BookingDeliveryStatus barber={barber} onNavigate={onNavigate} />
+
       {/* Direct Booking Link */}
       <DirectBookingLink barber={barber} rates={rates} />
 
@@ -445,6 +462,29 @@ function EarningsBreakdown({ bookings, rates }) {
         <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
         <span>Commission is calculated only on service price. Tips are never shared with the platform.</span>
       </div>
+    </div>
+  );
+}
+
+const DELIVERY_LABELS = {
+  nextcut_only: "NextCut only",
+  email: "Email notification",
+  webhook: "Webhook / URL",
+  website: "My website",
+};
+
+function BookingDeliveryStatus({ barber, onNavigate }) {
+  const method = barber.booking_delivery_method || "nextcut_only";
+  const label = DELIVERY_LABELS[method] || "NextCut only";
+  return (
+    <div className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border">
+      <div>
+        <p className="text-sm font-semibold">Booking Delivery</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+      </div>
+      <Button size="sm" variant="outline" className="text-xs h-8 rounded-lg" onClick={() => onNavigate("delivery")}>
+        Edit
+      </Button>
     </div>
   );
 }

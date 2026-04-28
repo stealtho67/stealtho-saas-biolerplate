@@ -73,7 +73,7 @@
     },
     "admin_note": {
       "type": "string",
-      "description": "Admin-facing note shown to barber when action is required. Set when admin sends barber back to action_required."
+      "description": "Admin-facing note shown to barber when action is required."
     },
     "working_hours": {
       "type": "object"
@@ -89,17 +89,15 @@
     },
     "stripe_account_id": {
       "type": "string",
-      "description": "Stripe Connect account ID (acct_xxx) \u2014 set when barber connects Stripe"
+      "description": "Stripe Connect account ID (acct_xxx)"
     },
     "stripe_onboarding_complete": {
       "type": "boolean",
-      "default": false,
-      "description": "True once barber has completed Stripe onboarding flow"
+      "default": false
     },
     "payouts_enabled": {
       "type": "boolean",
-      "default": false,
-      "description": "True when Stripe confirms charges and payouts are enabled"
+      "default": false
     },
     "stripe_status": {
       "type": "string",
@@ -110,8 +108,30 @@
         "verification_needed",
         "active"
       ],
-      "default": "not_connected",
-      "description": "Current Stripe Connect status for this barber"
+      "default": "not_connected"
+    },
+    "booking_delivery_method": {
+      "type": "string",
+      "enum": [
+        "nextcut_only",
+        "email",
+        "webhook",
+        "website"
+      ],
+      "default": "nextcut_only",
+      "description": "How the barber wants booking/client info forwarded after a booking is made."
+    },
+    "booking_delivery_email": {
+      "type": "string",
+      "description": "Email address to forward booking notifications to (used when method=email)."
+    },
+    "booking_delivery_webhook_url": {
+      "type": "string",
+      "description": "Webhook/intake URL to POST booking data to (used when method=webhook)."
+    },
+    "booking_delivery_website_url": {
+      "type": "string",
+      "description": "External booking page or website URL \u2014 stored for reference (used when method=website)."
     }
   },
   "required": [
