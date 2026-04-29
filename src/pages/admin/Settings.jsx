@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { getCommissionRules, saveCommissionRules, COMMISSION_LABELS, COMMISSION_DEFAULTS } from "@/lib/commissionRules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Info } from "lucide-react";
+import { Loader2, Info, Copy, Webhook } from "lucide-react";
 import { toast } from "sonner";
+
+const WEBHOOK_URL = "https://nextcut.base44.app/api/functions/stripeWebhookPublic";
 
 const RULE_DESCRIPTIONS = {
   new_nextcut_lead: "Client discovered the barber via NextCut marketplace, search, featured placement, or campaign traffic.",
@@ -44,8 +46,59 @@ export default function AdminSettings() {
 
   return (
     <div className="p-6 max-w-2xl space-y-6">
+
+      {/* Stripe Webhook URL */}
       <div>
-        <h1 className="font-heading font-bold text-2xl text-slate-900">Commission Rules</h1>
+        <h1 className="font-heading font-bold text-2xl text-slate-900">Platform Settings</h1>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Webhook className="w-4 h-4 text-primary" />
+          <h2 className="font-heading font-semibold text-slate-900">Stripe Webhook Endpoint</h2>
+        </div>
+        <p className="text-xs text-slate-500">
+          Register this URL in your{" "}
+          <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+            Stripe Dashboard → Webhooks
+          </a>
+          . This endpoint accepts POST requests from Stripe, verifies the signature, and processes events — no authentication required.
+        </p>
+        <div className="flex gap-2 items-center">
+          <code className="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-mono break-all">
+            {WEBHOOK_URL}
+          </code>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            onClick={() => {
+              navigator.clipboard.writeText(WEBHOOK_URL);
+              toast.success("Webhook URL copied!");
+            }}
+          >
+            <Copy className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+        <div className="text-xs text-slate-500 space-y-1">
+          <p><strong>Required events to subscribe:</strong></p>
+          <code className="block bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-600 leading-5">
+            checkout.session.completed<br />
+            payment_intent.succeeded<br />
+            payment_intent.payment_failed<br />
+            account.updated<br />
+            account.application.deauthorized<br />
+            payout.paid<br />
+            payout.failed<br />
+            invoice.created<br />
+            invoice.paid<br />
+            invoice.payment_failed
+          </code>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-heading font-bold text-xl text-slate-900">Commission Rules</h2>
         <p className="text-sm text-slate-500 mt-1">
           Commission is determined by how the client was acquired — not a single global rate.
           Tips are always 100% barber's. Commission applies to service price only.

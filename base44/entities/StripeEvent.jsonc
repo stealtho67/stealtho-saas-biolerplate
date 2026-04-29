@@ -1,0 +1,35 @@
+{
+  "name": "StripeEvent",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Stripe event ID (evt_xxx) \u2014 used for idempotency"
+    },
+    "event_type": {
+      "type": "string",
+      "description": "e.g. payment_intent.succeeded"
+    },
+    "processed_at": {
+      "type": "string",
+      "description": "ISO timestamp when event was successfully processed"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "processed",
+        "ignored",
+        "error"
+      ],
+      "default": "processed"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional debug info"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_type"
+  ]
+}
