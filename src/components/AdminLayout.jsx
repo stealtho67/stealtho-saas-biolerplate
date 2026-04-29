@@ -3,13 +3,14 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Scissors, Calendar, DollarSign,
-  Users, Star, LogOut, Menu, X, Shield, Settings, Home
+  Users, Star, LogOut, Menu, X, Shield, Settings, Home, Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const NAV = [
   { path: "/admin", icon: LayoutDashboard, label: "Overview" },
   { path: "/admin/barbers", icon: Scissors, label: "Barbers" },
+  { path: "/admin/barbershops", icon: Building2, label: "Barbershops" },
   { path: "/admin/bookings", icon: Calendar, label: "Bookings" },
   { path: "/admin/revenue", icon: DollarSign, label: "Revenue" },
   { path: "/admin/users", icon: Users, label: "Users" },

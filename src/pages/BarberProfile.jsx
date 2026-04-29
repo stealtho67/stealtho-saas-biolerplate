@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { MapPin, Star, BadgeCheck, Clock, Calendar, ArrowLeft, Share2 } from "lucide-react";
+import { MapPin, Star, BadgeCheck, Clock, Calendar, ArrowLeft, Share2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import BookingModal from "../components/BookingModal";
 export default function BarberProfile() {
   const { id } = useParams();
   const [barber, setBarber] = useState(null);
+  const [shop, setShop] = useState(null);
   const [services, setServices] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +51,10 @@ export default function BarberProfile() {
       base44.functions.invoke("manageBarberServices", { action: "listPublic", barberId: id }),
       base44.entities.Review.filter({ barber_id: id }),
     ]);
+    // Load barbershop if linked
+    if (b.barbershop_id) {
+      base44.entities.Barbershop.get(b.barbershop_id).then(s => { if (s?.status === "active") setShop(s); }).catch(() => {});
+    }
     // Handle both response shapes from manageBarberServices
     const rawServices = svcRes.data?.services || svcRes.data || [];
     setServices(Array.isArray(rawServices) ? rawServices : []);
@@ -140,8 +145,15 @@ export default function BarberProfile() {
               </div>
             </div>
           </div>
+          {/* Barbershop badge */}
+          {shop && (
+          <Link to={`/barbershop/${shop.id}`} className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-xl bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/80 transition-colors">
+            <Building2 className="w-3.5 h-3.5" />
+            {shop.shop_name}
+          </Link>
+          )}
           {barber.bio && (
-            <p className="text-sm text-muted-foreground mt-4 leading-relaxed">{barber.bio}</p>
+          <p className="text-sm text-muted-foreground mt-4 leading-relaxed">{barber.bio}</p>
           )}
           {barber.specialties?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">

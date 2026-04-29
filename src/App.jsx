@@ -24,6 +24,9 @@ import AdminUsers from './pages/admin/UserManagement';
 import AdminReviews from './pages/admin/ReviewsModeration';
 import AdminSettings from './pages/admin/Settings';
 import BarberDashboardPreview from './pages/admin/BarberDashboardPreview';
+import Barbershops from './pages/Barbershops';
+import BarbershopProfile from './pages/BarbershopProfile';
+import AdminBarbershops from './pages/admin/BarbershopManagement';
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -82,6 +85,8 @@ const AuthenticatedApp = () => {
         <Route path="/profile" element={<PageWrapper><Profile /></PageWrapper>} />
         <Route path="/dashboard" element={<PageWrapper><BarberDashboard /></PageWrapper>} />
         <Route path="/apply" element={<PageWrapper><BarberApplication /></PageWrapper>} />
+        <Route path="/barbershops" element={<PageWrapper><Barbershops /></PageWrapper>} />
+        <Route path="/barbershop/:id" element={<PageWrapper><BarbershopProfile /></PageWrapper>} />
       </Route>
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<PageWrapper><AdminOverview /></PageWrapper>} />
@@ -92,6 +97,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/reviews" element={<PageWrapper><AdminReviews /></PageWrapper>} />
         <Route path="/admin/settings" element={<PageWrapper><AdminSettings /></PageWrapper>} />
         <Route path="/admin/barber-preview/:id" element={<PageWrapper><BarberDashboardPreview /></PageWrapper>} />
+        <Route path="/admin/barbershops" element={<PageWrapper><AdminBarbershops /></PageWrapper>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </AnimatedRoutes>

@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Home, Search, Calendar, User, Scissors, LogOut, Shield } from "lucide-react";
+import { Home, Search, Calendar, User, Scissors, LogOut, Shield, Building2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export default function Layout() {
     ? [
         { path: "/", icon: Home, label: "Home" },
         { path: "/explore", icon: Search, label: "Explore" },
+        { path: "/barbershops", icon: Building2, label: "Shops" },
         { path: "/my-bookings", icon: Calendar, label: "Bookings" },
         { path: "/profile", icon: User, label: "Profile" },
         { path: "/admin", icon: Shield, label: "Admin" },
@@ -46,6 +47,7 @@ export default function Layout() {
     ? [
         { path: "/", icon: Home, label: "Home" },
         { path: "/explore", icon: Search, label: "Explore" },
+        { path: "/barbershops", icon: Building2, label: "Shops" },
         { path: "/dashboard", icon: Scissors, label: "Dashboard" },
         { path: "/my-bookings", icon: Calendar, label: "Bookings" },
         { path: "/profile", icon: User, label: "Profile" },
@@ -55,6 +57,7 @@ export default function Layout() {
     ? [
         { path: "/", icon: Home, label: "Home" },
         { path: "/explore", icon: Search, label: "Explore" },
+        { path: "/barbershops", icon: Building2, label: "Shops" },
         { path: "/dashboard", icon: Scissors, label: "Dashboard" },
         { path: "/my-bookings", icon: Calendar, label: "Bookings" },
         { path: "/profile", icon: User, label: "Profile" },
@@ -62,6 +65,7 @@ export default function Layout() {
     : [
         { path: "/", icon: Home, label: "Home" },
         { path: "/explore", icon: Search, label: "Explore" },
+        { path: "/barbershops", icon: Building2, label: "Shops" },
         { path: "/my-bookings", icon: Calendar, label: "Bookings" },
         { path: "/profile", icon: User, label: "Profile" },
       ];

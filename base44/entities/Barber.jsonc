@@ -132,6 +132,10 @@
     "booking_delivery_website_url": {
       "type": "string",
       "description": "External booking page or website URL \u2014 stored for reference (used when method=website)."
+    },
+    "barbershop_id": {
+      "type": "string",
+      "description": "ID of the Barbershop this barber belongs to (optional). Null means solo/independent barber."
     }
   },
   "required": [

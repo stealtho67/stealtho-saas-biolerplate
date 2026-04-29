@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import {
   Calendar, DollarSign, Users, Star, TrendingUp, Clock,
   Info, Link2, Copy, LayoutDashboard, UserCircle, Scissors,
-  Images, CreditCard, Bell
+  Images, CreditCard, Bell, Building2
 } from "lucide-react";
 import { COMMISSION_LABELS, getCommissionRules } from "@/lib/commissionRules";
 import ProfileEditor from "@/components/barber/ProfileEditor";
@@ -15,6 +15,7 @@ import StripePayoutsSection from "@/components/barber/StripePayoutsSection";
 import StatusHeader from "@/components/barber/StatusHeader";
 import BarberInfoTab from "@/components/barber/BarberInfoTab";
 import BookingDeliveryEditor from "@/components/barber/BookingDeliveryEditor";
+import BarbershopTab from "@/components/barber/BarbershopTab";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +28,7 @@ const TABS = [
   { id: "portfolio", label: "Portfolio", icon: Images },
   { id: "payouts", label: "Payouts", icon: CreditCard },
   { id: "delivery", label: "Delivery", icon: Bell },
+  { id: "shop", label: "Shop", icon: Building2 },
   { id: "info", label: "Info", icon: Info },
 ];
 
@@ -240,6 +242,19 @@ export default function BarberDashboard() {
               Your bookings always stay in NextCut — this is an optional extra notification.
             </p>
             <BookingDeliveryEditor barber={barber} onSaved={setBarber} />
+          </div>
+        </TabsContent>
+
+        {/* ── SHOP TAB ── */}
+        <TabsContent value="shop">
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <h2 className="font-heading font-semibold mb-1">My Barbershop</h2>
+            <p className="text-xs text-muted-foreground mb-5">
+              {barber.barbershop_id
+                ? "Your shop details and activity on NextCut."
+                : "You're currently an independent barber. Contact your shop admin to get linked."}
+            </p>
+            <BarbershopTab barber={barber} bookings={bookings} />
           </div>
         </TabsContent>
 

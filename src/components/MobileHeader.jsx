@@ -9,6 +9,7 @@ import { ChevronLeft, Scissors } from "lucide-react";
 const PAGE_TITLES = {
   "/": "NextCut",
   "/explore": "Explore",
+  "/barbershops": "Barbershops",
   "/my-bookings": "My Bookings",
   "/profile": "Profile",
   "/dashboard": "Dashboard",
@@ -16,11 +17,12 @@ const PAGE_TITLES = {
 };
 
 // Root tab paths — these show the logo, not a back button
-const ROOT_TABS = new Set(["/", "/explore", "/my-bookings", "/profile", "/dashboard"]);
+const ROOT_TABS = new Set(["/", "/explore", "/barbershops", "/my-bookings", "/profile", "/dashboard"]);
 
 function getTitle(pathname) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   if (pathname.startsWith("/barber/")) return "Barber Profile";
+  if (pathname.startsWith("/barbershop/")) return "Barbershop";
   return "NextCut";
 }
 

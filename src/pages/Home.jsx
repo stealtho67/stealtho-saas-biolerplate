@@ -1,37 +1,46 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Search, ArrowRight, Scissors, Star, Shield, Zap, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Search, ArrowRight, Scissors, Star, Shield, Zap, TrendingUp, CheckCircle2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BarberCard from "../components/BarberCard";
+import ShopCard from "../components/ShopCard";
 
 export default function Home() {
   const [featuredBarbers, setFeaturedBarbers] = useState([]);
   const [topBarbers, setTopBarbers] = useState([]);
   const [availableNow, setAvailableNow] = useState([]);
+  const [featuredShops, setFeaturedShops] = useState([]);
+  const [shopBarberCounts, setShopBarberCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
-  const [stats, setStats] = useState({ barbers: 0, cities: 0 });
+  const [stats, setStats] = useState({ barbers: 0, cities: 0, shops: 0 });
   const [isBarberUser, setIsBarberUser] = useState(false);
 
   useEffect(() => {
-    loadBarbers();
+    loadData();
   }, []);
 
-  const loadBarbers = async () => {
-    const [allBarbers] = await Promise.all([
+  const loadData = async () => {
+    const [allBarbers, allShops] = await Promise.all([
       base44.entities.Barber.filter({ status: "active" }),
+      base44.entities.Barbershop.filter({ status: "active" }),
     ]);
     setFeaturedBarbers(allBarbers.filter(b => b.is_featured).slice(0, 4));
     setTopBarbers([...allBarbers].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 4));
     setAvailableNow(allBarbers.filter(b => b.is_available_now).slice(0, 4));
+    // Count barbers per shop
+    const counts = {};
+    allBarbers.forEach(b => { if (b.barbershop_id) counts[b.barbershop_id] = (counts[b.barbershop_id] || 0) + 1; });
+    setShopBarberCounts(counts);
+    const featShops = allShops.filter(s => s.is_featured).slice(0, 3);
+    setFeaturedShops(featShops.length > 0 ? featShops : allShops.slice(0, 3));
     const uniqueCities = new Set(allBarbers.map(b => b.city).filter(Boolean));
-    setStats({ barbers: allBarbers.length, cities: uniqueCities.size });
+    setStats({ barbers: allBarbers.length, cities: uniqueCities.size, shops: allShops.length });
     setLoading(false);
     base44.auth.me().then(async me => {
       if (!me) return;
       setUserRole(me.role || "client");
-      // Also check for barber record — role field can lag after application submit
       if (me.role === "barber" || me.role === "admin") {
         setIsBarberUser(true);
       } else if (me.email) {
@@ -77,9 +86,10 @@ export default function Home() {
 
           {/* Stats — live data */}
           {!loading && stats.barbers > 0 && (
-            <div className="grid grid-cols-2 gap-6 mt-12 max-w-xs">
+            <div className="grid grid-cols-3 gap-6 mt-12 max-w-sm">
               {[
                 { label: "Active Barbers", value: stats.barbers },
+                { label: "Barbershops", value: stats.shops || 0 },
                 { label: "Cities", value: stats.cities || 1 },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
@@ -110,6 +120,26 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Featured Barbershops */}
+      {!loading && featuredShops.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" />
+              <h2 className="font-heading font-bold text-lg">Barbershops</h2>
+            </div>
+            <Link to="/barbershops" className="text-sm text-primary font-medium flex items-center gap-1 hover:underline">
+              See all <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+            {featuredShops.map(shop => (
+              <ShopCard key={shop.id} shop={shop} barberCount={shopBarberCounts[shop.id] || 0} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Available Now */}
       {availableNow.length > 0 && (

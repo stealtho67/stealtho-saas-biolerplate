@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Star, BadgeCheck, Zap } from "lucide-react";
+import { MapPin, Star, BadgeCheck, Zap, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function BarberCard({ barber }) {
@@ -50,6 +50,12 @@ export default function BarberCard({ barber }) {
               <MapPin className="w-3 h-3" />
               <span>{barber.neighborhood || barber.city}</span>
             </div>
+            {barber.barbershop_id && (
+              <div className="flex items-center gap-1 text-muted-foreground text-[10px] mt-0.5">
+                <Building2 className="w-2.5 h-2.5" />
+                <span>Barbershop</span>
+              </div>
+            )}
           </div>
           {barber.rating > 0 && (
             <div className="flex items-center gap-1 bg-secondary px-2 py-1 rounded-lg shrink-0">
