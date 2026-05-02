@@ -138,6 +138,13 @@ export default function Home() {
               <ShopCard key={shop.id} shop={shop} barberCount={shopBarberCounts[shop.id] || 0} />
             ))}
           </div>
+          <div className="mt-4 flex items-center justify-center">
+            <Link to="/apply?type=shop" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+              <Building2 className="w-3.5 h-3.5" />
+              Own a barbershop? <span className="text-primary font-medium underline underline-offset-2">Apply to list your shop</span>
+              <ArrowRight className="w-3.5 h-3.5 text-primary" />
+            </Link>
+          </div>
         </section>
       )}
 
