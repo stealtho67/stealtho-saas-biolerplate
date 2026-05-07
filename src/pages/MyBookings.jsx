@@ -73,6 +73,7 @@ export default function MyBookings() {
   const [reviewComment, setReviewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [paymentModal, setPaymentModal] = useState(null);
+  const [reviewedBookingIds, setReviewedBookingIds] = useState(new Set());
 
   useEffect(() => {
     loadData();
@@ -104,7 +105,14 @@ export default function MyBookings() {
     } else {
       allBookings = await base44.entities.Booking.filter({ client_email: me.email });
     }
-    setBookings(allBookings.sort((a, b) => new Date(b.date) - new Date(a.date)));
+    const sorted = allBookings.sort((a, b) => new Date(b.date) - new Date(a.date));
+    setBookings(sorted);
+
+    // Load which bookings this client has already reviewed
+    if (!hasBarberRecord) {
+      const existingReviews = await base44.entities.Review.filter({ client_email: me.email });
+      setReviewedBookingIds(new Set(existingReviews.map(r => r.booking_id)));
+    }
     setLoading(false);
   }, []);
 
@@ -148,11 +156,12 @@ export default function MyBookings() {
       setSubmitting(false);
       return;
     }
+    const bookingId = reviewModal.id;
     await base44.entities.Review.create({
       client_email: user.email,
       client_name: user.full_name,
       barber_id: reviewModal.barber_id,
-      booking_id: reviewModal.id,
+      booking_id: bookingId,
       rating: reviewRating,
       comment: reviewComment,
     });
@@ -163,6 +172,9 @@ export default function MyBookings() {
       rating: Math.round(avgRating * 10) / 10,
       total_reviews: reviews.length,
     });
+    // Mark this booking as reviewed so the button disappears
+    setReviewedBookingIds(prev => new Set([...prev, bookingId]));
+    toast.success("Review submitted! Thank you.");
     setSubmitting(false);
     setReviewModal(null);
     setReviewRating(5);
@@ -251,9 +263,15 @@ export default function MyBookings() {
           </Button>
         )}
         {!isBarber && booking.status === "completed" && (
-          <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg" onClick={() => setReviewModal(booking)}>
-            <Star className="w-3 h-3 mr-1" /> Leave Review
-          </Button>
+          reviewedBookingIds.has(booking.id) ? (
+            <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> Reviewed
+            </span>
+          ) : (
+            <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg" onClick={() => { setReviewRating(5); setReviewComment(""); setReviewModal(booking); }}>
+              <Star className="w-3 h-3 mr-1" /> Leave Review
+            </Button>
+          )
         )}
         {!isBarber && (
           <Link to={`/barber/${booking.barber_id}`}>
