@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Zap, RefreshCw, ExternalLink, CheckCircle2, AlertCircle,
-  Clock, DollarSign, Info, ShieldCheck, LayoutDashboard
+  Clock, DollarSign, Info, ShieldCheck, LayoutDashboard, History
 } from "lucide-react";
 import { getCommissionRules } from "@/lib/commissionRules";
 import { toast } from "sonner";
+import PayoutHistory from "./PayoutHistory";
 
 const STATUS_CONFIG = {
   not_connected: {
@@ -202,6 +204,7 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
     <div className="bg-card rounded-2xl border border-border overflow-hidden">
       {/* Section Header */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
+
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-primary" />
           <h3 className="font-heading font-bold text-base">Payments & Payouts</h3>
@@ -358,6 +361,15 @@ export default function StripePayoutsSection({ barber, bookings, onBarberUpdate 
             ) : "Loading rates... "}
             Tips are always <strong>100% yours</strong> and never shared with the platform.
           </span>
+        </div>
+
+        {/* Payout History */}
+        <div className="border-t border-border pt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <History className="w-4 h-4 text-primary" />
+            <h4 className="font-heading font-semibold text-sm">Payout History</h4>
+          </div>
+          <PayoutHistory barber={localBarber} />
         </div>
       </div>
     </div>

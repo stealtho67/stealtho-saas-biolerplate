@@ -53,8 +53,24 @@ export default function BookingModal({ open, onClose, barber, services }) {
   const getAvailableSlots = () => {
     if (!selectedDate) return TIME_SLOTS;
     const dateStr = format(selectedDate, "yyyy-MM-dd");
-    const bookedTimes = existingBookings.filter(b => b.date === dateStr).map(b => b.time);
-    return TIME_SLOTS.filter(t => !bookedTimes.includes(t));
+    const dayBookings = existingBookings.filter(b => b.date === dateStr);
+
+    return TIME_SLOTS.filter(slotTime => {
+      const [slotH, slotM] = slotTime.split(":").map(Number);
+      const slotStart = slotH * 60 + slotM;
+      // Duration of the service the client is trying to book
+      const newDuration = selectedService?.duration_minutes || 30;
+      const slotEnd = slotStart + newDuration;
+
+      // Check if this slot overlaps with any existing booking
+      return !dayBookings.some(b => {
+        const [bH, bM] = b.time.split(":").map(Number);
+        const bStart = bH * 60 + bM;
+        const bEnd = bStart + (b.duration_minutes || 30);
+        // Overlap if new slot starts before existing ends AND new slot ends after existing starts
+        return slotStart < bEnd && slotEnd > bStart;
+      });
+    });
   };
 
   const buildBookingPayload = async () => {
