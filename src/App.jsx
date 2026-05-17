@@ -9,6 +9,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
+import AuthGate from './components/AuthGate';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import BarberProfile from './pages/BarberProfile';
@@ -81,9 +82,9 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
         <Route path="/explore" element={<PageWrapper><Explore /></PageWrapper>} />
         <Route path="/barber/:id" element={<PageWrapper><BarberProfile /></PageWrapper>} />
-        <Route path="/my-bookings" element={<PageWrapper><MyBookings /></PageWrapper>} />
-        <Route path="/profile" element={<PageWrapper><Profile /></PageWrapper>} />
-        <Route path="/dashboard" element={<PageWrapper><BarberDashboard /></PageWrapper>} />
+        <Route path="/my-bookings" element={<AuthGate pathname="/my-bookings"><PageWrapper><MyBookings /></PageWrapper></AuthGate>} />
+        <Route path="/profile" element={<AuthGate pathname="/profile"><PageWrapper><Profile /></PageWrapper></AuthGate>} />
+        <Route path="/dashboard" element={<AuthGate pathname="/dashboard"><PageWrapper><BarberDashboard /></PageWrapper></AuthGate>} />
         <Route path="/apply" element={<PageWrapper><BarberApplication /></PageWrapper>} />
         <Route path="/barbershops" element={<PageWrapper><Barbershops /></PageWrapper>} />
         <Route path="/barbershop/:id" element={<PageWrapper><BarbershopProfile /></PageWrapper>} />

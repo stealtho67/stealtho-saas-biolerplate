@@ -141,11 +141,46 @@ export default function Explore() {
           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={MapPin}
-          title="No barbers found"
-          description="Try changing your search or filters"
-        />
+        search || cityFilter !== "all" ? (
+          <EmptyState
+            icon={MapPin}
+            title="No barbers found"
+            description="Try changing your search or filters"
+          />
+        ) : (
+          <div className="text-center py-16 px-4">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <MapPin className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="font-heading font-bold text-lg mb-2">Founding barbers are joining now</h3>
+            <p className="text-muted-foreground text-sm max-w-xs mx-auto mb-2">
+              NextCut is building the easiest way to find your next barber by seeing real work first.
+            </p>
+            <p className="text-muted-foreground text-sm max-w-xs mx-auto mb-6">
+              Want your barber listed? Send them this page, or apply yourself.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <a
+                href="/apply"
+                className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary/90"
+              >
+                Apply as a Barber
+              </a>
+              <button
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: "NextCut", url: window.location.href });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                  }
+                }}
+                className="inline-flex items-center justify-center h-11 px-6 rounded-xl border border-border text-sm font-medium transition-colors hover:bg-secondary"
+              >
+                Share this page
+              </button>
+            </div>
+          </div>
+        )
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
           {filtered.map((barber) => (

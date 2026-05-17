@@ -28,16 +28,19 @@ export default function AdminLayout() {
   useEffect(() => {
     base44.auth.me()
       .then((me) => {
-        if (!me || me.role !== "admin") {
-          navigate("/", { replace: true });
+        if (!me) {
+          base44.auth.redirectToLogin(window.location.href);
+          return;
+        }
+        if (me.role !== "admin") {
+          setUser({ ...me, accessDenied: true });
         } else {
           setUser(me);
         }
         setChecking(false);
       })
       .catch(() => {
-        navigate("/", { replace: true });
-        setChecking(false);
+        base44.auth.redirectToLogin(window.location.href);
       });
   }, []);
 
@@ -45,6 +48,25 @@ export default function AdminLayout() {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (user?.accessDenied) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background px-4">
+        <div className="max-w-sm w-full text-center">
+          <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-5">
+            <Shield className="w-8 h-8 text-destructive" />
+          </div>
+          <h2 className="font-heading font-bold text-xl mb-2">Admin access required</h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            You don't have permission to view this area.
+          </p>
+          <Button onClick={() => navigate("/")} className="w-full h-11 rounded-xl">
+            Back to NextCut
+          </Button>
+        </div>
       </div>
     );
   }

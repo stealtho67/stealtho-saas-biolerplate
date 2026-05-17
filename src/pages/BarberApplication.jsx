@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Scissors, MapPin, User, FileText, Upload,
-  CheckCircle2, Loader2, Plus, X, ArrowLeft, ArrowRight
+  CheckCircle2, Loader2, Plus, X, ArrowLeft, ArrowRight,
+  Star, DollarSign, Building2, Users, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,26 +28,52 @@ const SPECIALTY_SUGGESTIONS = [
 
 export default function BarberApplication() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
-  const [checkingExisting, setCheckingExisting] = useState(true);
+  const urlParams = new URLSearchParams(window.location.search);
+  const type = urlParams.get("type"); // "shop" or null (barber)
+  const isShop = type === "shop";
 
-  // On mount: if user already has a barber profile OR barber role, send them to dashboard
-  useEffect(() => {
+  // "pitch" = public explainer, "form" = actual application form
+  const [mode, setMode] = useState("pitch");
+  const [step, setStep] = useState(1);
+  const [checkingExisting, setCheckingExisting] = useState(false);
+
+  const startApplication = () => {
+    // Require login before showing the form
     base44.auth.me().then(me => {
       if (!me) {
-        // Not logged in — redirect to login, return to /apply after
-        base44.auth.redirectToLogin(window.location.href);
+        base44.auth.redirectToLogin(window.location.href + "&start=1");
         return;
       }
-      // Check barber record first (most reliable — role field can lag)
+      // Check barber record
       base44.entities.Barber.filter({ user_email: me.email }).then(existing => {
         if (existing.length > 0 || me.role === "barber") {
           navigate("/dashboard", { replace: true });
         } else {
-          setCheckingExisting(false);
+          setMode("form");
         }
       });
-    }).catch(() => setCheckingExisting(false));
+    }).catch(() => {
+      base44.auth.redirectToLogin(window.location.href + "&start=1");
+    });
+  };
+
+  // If returning from login with ?start=1, skip pitch and go straight to form
+  useEffect(() => {
+    const start = urlParams.get("start");
+    if (start === "1") {
+      setCheckingExisting(true);
+      base44.auth.me().then(me => {
+        if (!me) { setCheckingExisting(false); return; }
+        base44.entities.Barber.filter({ user_email: me.email }).then(existing => {
+          if (existing.length > 0 || me.role === "barber") {
+            navigate("/dashboard", { replace: true });
+          } else {
+            setMode("form");
+            setCheckingExisting(false);
+          }
+        });
+      }).catch(() => setCheckingExisting(false));
+    }
   }, []);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -170,6 +197,137 @@ export default function BarberApplication() {
       </div>
     );
   }
+
+  // ── Public pitch page ──────────────────────────────────────────────
+  if (mode === "pitch") {
+    if (isShop) {
+      return (
+        <div className="min-h-screen bg-background pb-24 md:pb-12">
+          <div className="max-w-2xl mx-auto px-4 py-10">
+            {/* Hero */}
+            <div className="text-center mb-10">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Building2 className="w-8 h-8 text-primary" />
+              </div>
+              <h1 className="font-heading font-bold text-3xl mb-3">Put your shop and every barber on the map</h1>
+              <p className="text-muted-foreground text-base max-w-lg mx-auto">
+                List your barbershop on NextCut and attract local clients who are ready to book — for every chair in your shop.
+              </p>
+            </div>
+
+            {/* Benefits */}
+            <div className="space-y-3 mb-10">
+              {[
+                { icon: Users, text: "List all your barbers under one shop profile" },
+                { icon: MapPin, text: "Show up in local discovery for every client nearby" },
+                { icon: Star, text: "Collect reviews that build your shop's reputation" },
+                { icon: DollarSign, text: "Enable online booking and payments for every chair" },
+                { icon: Scissors, text: "Manage walk-ins, appointments, and payouts in one place" },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium">{text}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* How it works */}
+            <div className="mb-10">
+              <h2 className="font-heading font-bold text-lg mb-4">How it works</h2>
+              <div className="space-y-4">
+                {[
+                  { step: "1", title: "Submit your shop info", body: "Tell us your shop name, location, and how many barbers you have." },
+                  { step: "2", title: "We review & activate", body: "Our team reviews your application and activates your shop profile within 1–2 days." },
+                  { step: "3", title: "Clients find and book you", body: "Your shop and its barbers appear in local search and start getting booked." },
+                ].map(({ step, title, body }) => (
+                  <div key={step} className="flex gap-4">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center shrink-0">
+                      {step}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{title}</p>
+                      <p className="text-muted-foreground text-xs mt-0.5">{body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Button onClick={startApplication} className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20">
+              Start Shop Application <ChevronRight className="w-5 h-5 ml-1" />
+            </Button>
+            <p className="text-xs text-center text-muted-foreground mt-3">Free to apply. Sign in required to submit.</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Barber pitch
+    return (
+      <div className="min-h-screen bg-background pb-24 md:pb-12">
+        <div className="max-w-2xl mx-auto px-4 py-10">
+          {/* Hero */}
+          <div className="text-center mb-10">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Scissors className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="font-heading font-bold text-3xl mb-3">Become a founding barber on NextCut</h1>
+            <p className="text-muted-foreground text-base max-w-lg mx-auto">
+              Turn your social following and current clients into a bookable profile that works 24/7 — and reach new clients actively searching near you.
+            </p>
+          </div>
+
+          {/* Benefits */}
+          <div className="space-y-3 mb-10">
+            {[
+              { icon: Star, text: "Free founding profile — no setup fee, no monthly cost" },
+              { icon: MapPin, text: "Early placement in local discovery before it gets competitive" },
+              { icon: Scissors, text: "Keep your current booking link — we work alongside it" },
+              { icon: DollarSign, text: "Keep 80–90% of every booking processed through NextCut" },
+              { icon: Users, text: "Portfolio, service menu, and reviews all in one shareable link" },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-sm font-medium">{text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* How it works */}
+          <div className="mb-10">
+            <h2 className="font-heading font-bold text-lg mb-4">How it works</h2>
+            <div className="space-y-4">
+              {[
+                { step: "1", title: "Apply in minutes", body: "Fill out your profile — name, location, specialties, and a photo. Takes less than 3 minutes." },
+                { step: "2", title: "We review & activate", body: "Our team reviews every barber to keep quality high. You'll hear back within 1–2 business days." },
+                { step: "3", title: "Clients find and book you", body: "Your profile appears in search. Clients browse your portfolio, read reviews, and book on the spot." },
+              ].map(({ step, title, body }) => (
+                <div key={step} className="flex gap-4">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center shrink-0">
+                    {step}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{title}</p>
+                    <p className="text-muted-foreground text-xs mt-0.5">{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Button onClick={startApplication} className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20">
+            Start Barber Application <ChevronRight className="w-5 h-5 ml-1" />
+          </Button>
+          <p className="text-xs text-center text-muted-foreground mt-3">Free to apply. Sign in required to submit.</p>
+        </div>
+      </div>
+    );
+  }
+  // ── End pitch page ────────────────────────────────────────────────
 
   if (done) {
     return (
