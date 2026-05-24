@@ -70,8 +70,8 @@ export default function Explore() {
     <div className="max-w-6xl mx-auto px-4 py-6 pb-24 md:pb-8">
       <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
       <div className="mb-6">
-        <h1 className="font-heading font-bold text-2xl">Explore Barbers</h1>
-        <p className="text-muted-foreground text-sm mt-1">Find the perfect barber near you</p>
+        <h1 className="font-heading font-bold text-2xl md:text-3xl">Find Your Next Barber</h1>
+        <p className="text-muted-foreground text-sm mt-1">Browse trusted local barbers by city, specialty, and price.</p>
       </div>
 
       {/* Search & Filters */}

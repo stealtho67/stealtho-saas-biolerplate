@@ -255,7 +255,7 @@ export default function BarberApplication() {
               </div>
             </div>
 
-            <Button onClick={startApplication} className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20">
+            <Button onClick={startApplication} className="w-full h-12 rounded-xl text-base bg-primary hover:bg-orange-600 text-white shadow-lg shadow-primary/20">
               Start Shop Application <ChevronRight className="w-5 h-5 ml-1" />
             </Button>
             <p className="text-xs text-center text-muted-foreground mt-3">Free to apply. Sign in required to submit.</p>
@@ -273,10 +273,29 @@ export default function BarberApplication() {
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Scissors className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="font-heading font-bold text-3xl mb-3">Become a founding barber on NextCut</h1>
+            <h1 className="font-heading font-bold text-3xl mb-3">Turn your cuts into bookings.</h1>
             <p className="text-muted-foreground text-base max-w-lg mx-auto">
-              Turn your social following and current clients into a bookable profile that works 24/7 — and reach new clients actively searching near you.
+              NextCut helps barbers get discovered locally, showcase your best work, and send clients to your booking system — for free, no commission.
             </p>
+          </div>
+
+          {/* Founding offer card */}
+          <div className="p-5 rounded-xl bg-card border border-primary/30 mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-semibold">Founding Barber</span>
+            </div>
+            <ul className="space-y-2">
+              {[
+                "Free founding profile setup",
+                "Launch discovery placement — first 10 per city = permanent Spotlight slot",
+                "Portfolio and service-menu cleanup",
+                "Keep your current Booksy / SQUIRE / Square / Fresha link",
+              ].map(item => (
+                <li key={item} className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />{item}
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Benefits */}
@@ -319,7 +338,25 @@ export default function BarberApplication() {
             </div>
           </div>
 
-          <Button onClick={startApplication} className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20">
+          {/* FAQ */}
+          <div className="mb-10">
+            <h2 className="font-heading font-bold text-lg mb-4">FAQ</h2>
+            <div className="space-y-3">
+              {[
+                { q: "What does it cost?", a: "Founding profiles are free. Optional promo packages start at $19/mo (Starter), $49/mo (Growth), $99/mo (Spotlight)." },
+                { q: "Do I have to switch booking systems?", a: "No. NextCut links to whatever you already use." },
+                { q: "How long does setup take?", a: "About 24 hours after you finish your application." },
+                { q: "Do you take commission?", a: "No commission on bookings. Ever." },
+              ].map(({ q, a }) => (
+                <div key={q} className="p-4 rounded-xl bg-card border border-border">
+                  <p className="font-medium text-sm mb-1">{q}</p>
+                  <p className="text-muted-foreground text-xs leading-relaxed">{a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Button onClick={startApplication} className="w-full h-12 rounded-xl text-base bg-primary hover:bg-orange-600 text-white shadow-lg shadow-primary/20">
             Start Barber Application <ChevronRight className="w-5 h-5 ml-1" />
           </Button>
           <p className="text-xs text-center text-muted-foreground mt-3">Free to apply. Sign in required to submit.</p>

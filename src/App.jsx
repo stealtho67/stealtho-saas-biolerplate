@@ -10,7 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 import AuthGate from './components/AuthGate';
-import Home from './pages/Home';
+import Home from './pages/Home.jsx';
 import Explore from './pages/Explore';
 import BarberProfile from './pages/BarberProfile';
 import MyBookings from './pages/MyBookings';
@@ -59,7 +59,7 @@ const AuthenticatedApp = () => {
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
       </div>
     );
   }
