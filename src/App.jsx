@@ -10,7 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 import AuthGate from './components/AuthGate';
-import Home from './pages/Home.jsx';
+import Home from './pages/Home';
 import Explore from './pages/Explore';
 import BarberProfile from './pages/BarberProfile';
 import MyBookings from './pages/MyBookings';
