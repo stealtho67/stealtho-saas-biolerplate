@@ -14,15 +14,17 @@
 import { base44 } from "@/api/base44Client";
 
 export const COMMISSION_DEFAULTS = {
-  new_nextcut_lead: 0.20,
-  repeat_client: 0.15,
-  barber_direct_client: 0.10,
+  new_nextcut_lead: 0.07,
+  repeat_client: 0.04,
+  barber_direct_client: 0.03,
+  barber_referral_link: 0.00, // Barber's own referral link — 0% platform commission
 };
 
 export const COMMISSION_LABELS = {
   new_nextcut_lead: "New NextCut Lead",
   repeat_client: "Repeat Client",
   barber_direct_client: "Barber Direct",
+  barber_referral_link: "Your Referral Link",
 };
 
 export const SOURCE_TO_TYPE = {
@@ -30,7 +32,7 @@ export const SOURCE_TO_TYPE = {
   search: "new_nextcut_lead",
   featured: "new_nextcut_lead",
   nextcut_campaign: "new_nextcut_lead",
-  barber_referral_link: "barber_direct_client",
+  barber_referral_link: "barber_referral_link", // 0% commission — barber keeps 100%
   barber_direct_link: "barber_direct_client",
   manual: "new_nextcut_lead",
 };
@@ -47,6 +49,7 @@ export async function getCommissionRules() {
     new_nextcut_lead: map["rate_new_nextcut_lead"] ?? COMMISSION_DEFAULTS.new_nextcut_lead,
     repeat_client: map["rate_repeat_client"] ?? COMMISSION_DEFAULTS.repeat_client,
     barber_direct_client: map["rate_barber_direct_client"] ?? COMMISSION_DEFAULTS.barber_direct_client,
+    barber_referral_link: 0.00, // Always 0% — barber keeps 100%
   };
 }
 
@@ -82,15 +85,17 @@ export async function saveCommissionRules(rates) {
  *   3. new_nextcut_lead       — all other marketplace/search traffic
  */
 export async function resolveCommissionType(clientEmail, barberId, customerSource) {
-  // 1. Barber-direct traffic
-  if (
-    customerSource === "barber_referral_link" ||
-    customerSource === "barber_direct_link"
-  ) {
+  // 1. Barber's own referral link → 0% commission
+  if (customerSource === "barber_referral_link") {
+    return "barber_referral_link";
+  }
+
+  // 2. Barber direct link → reduced commission
+  if (customerSource === "barber_direct_link") {
     return "barber_direct_client";
   }
 
-  // 2. Check for prior completed+paid booking (repeat client)
+  // 3. Check for prior completed+paid booking (repeat client)
   const priorBookings = await base44.entities.Booking.filter({
     client_email: clientEmail,
     barber_id: barberId,
@@ -102,7 +107,7 @@ export async function resolveCommissionType(clientEmail, barberId, customerSourc
     return "repeat_client";
   }
 
-  // 3. Default — new NextCut lead
+  // 4. Default — new NextCut lead
   return "new_nextcut_lead";
 }
 

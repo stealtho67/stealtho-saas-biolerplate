@@ -7,43 +7,43 @@ const STATUS_CONFIG = {
   pending: {
     label: "Pending Admin Approval",
     description: "Your application is under review. You are not yet visible to clients on the marketplace.",
-    color: "text-amber-700",
-    bg: "bg-amber-50 border-amber-200",
-    iconBg: "bg-amber-100",
+    color: "text-amber-400",
+    bg: "bg-amber-500/10 border-amber-500/30",
+    iconBg: "bg-amber-500/20",
     icon: Clock,
   },
   action_required: {
     label: "Action Required",
     description: "Admin has flagged your profile — check the note in your Dashboard. You are not visible until resolved.",
-    color: "text-orange-700",
-    bg: "bg-orange-50 border-orange-200",
-    iconBg: "bg-orange-100",
+    color: "text-orange-400",
+    bg: "bg-orange-500/10 border-orange-500/30",
+    iconBg: "bg-orange-500/20",
     icon: AlertTriangle,
   },
   active: {
     label: "Approved & Active",
     description: "You are approved and visible on the marketplace. Clients can find and book you.",
-    color: "text-emerald-700",
-    bg: "bg-emerald-50 border-emerald-200",
-    iconBg: "bg-emerald-100",
+    color: "text-primary",
+    bg: "bg-primary/10 border-primary/30",
+    iconBg: "bg-primary/20",
     icon: ShieldCheck,
   },
   suspended: {
     label: "Account Suspended",
     description: "Your account has been suspended. Contact support to resolve this.",
-    color: "text-red-700",
-    bg: "bg-red-50 border-red-200",
-    iconBg: "bg-red-100",
+    color: "text-destructive",
+    bg: "bg-destructive/10 border-destructive/30",
+    iconBg: "bg-destructive/20",
     icon: Ban,
   },
 };
 
 const STRIPE_CONFIG = {
-  not_connected: { label: "Not Connected", color: "text-slate-500", bg: "bg-slate-100", icon: AlertTriangle },
-  onboarding_in_progress: { label: "Setup In Progress", color: "text-amber-600", bg: "bg-amber-100", icon: Clock },
-  onboarding_required: { label: "Onboarding Required", color: "text-orange-600", bg: "bg-orange-100", icon: AlertTriangle },
-  verification_needed: { label: "Verification Needed", color: "text-red-600", bg: "bg-red-100", icon: AlertTriangle },
-  active: { label: "Payouts Enabled", color: "text-emerald-600", bg: "bg-emerald-100", icon: ShieldCheck },
+  not_connected: { label: "Not Connected", color: "text-muted-foreground", bg: "bg-secondary", icon: AlertTriangle },
+  onboarding_in_progress: { label: "Setup In Progress", color: "text-amber-400", bg: "bg-amber-500/20", icon: Clock },
+  onboarding_required: { label: "Onboarding Required", color: "text-orange-400", bg: "bg-orange-500/20", icon: AlertTriangle },
+  verification_needed: { label: "Verification Needed", color: "text-destructive", bg: "bg-destructive/20", icon: AlertTriangle },
+  active: { label: "Payouts Enabled", color: "text-primary", bg: "bg-primary/20", icon: ShieldCheck },
 };
 
 // Compact checklist step icons only
@@ -89,9 +89,9 @@ export default function BarberProfileTab({ barber, services }) {
   const pct = Math.round((doneCount / total) * 100);
 
   const readinessLabel = {
-    live_ready: { label: "Ready to Go Live", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-    almost_ready: { label: "Almost Ready", color: "text-amber-700 bg-amber-50 border-amber-200" },
-    not_ready: { label: "Setup Incomplete", color: "text-slate-600 bg-slate-50 border-slate-200" },
+    live_ready: { label: "Ready to Go Live", color: "text-primary bg-primary/10 border-primary/30" },
+    almost_ready: { label: "Almost Ready", color: "text-amber-400 bg-amber-500/10 border-amber-500/30" },
+    not_ready: { label: "Setup Incomplete", color: "text-muted-foreground bg-secondary border-border" },
   }[readiness];
 
   return (
@@ -105,7 +105,7 @@ export default function BarberProfileTab({ barber, services }) {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <p className={`font-semibold text-sm ${appStatus.color}`}>{appStatus.label}</p>
             {isFullyLive && (
-              <span className="flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 border border-primary/30 px-2.5 py-0.5 rounded-full">
                 <Zap className="w-3 h-3" /> Live on Marketplace
               </span>
             )}
@@ -157,7 +157,7 @@ export default function BarberProfileTab({ barber, services }) {
           <li className="flex items-start gap-2"><ChevronRight className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />Clients can only search and book approved barbers.</li>
           <li className="flex items-start gap-2"><ChevronRight className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />Stripe is required to receive automatic payouts from online bookings.</li>
           <li className="flex items-start gap-2"><ChevronRight className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />Tips are always 100% yours — the platform never takes a cut of tips.</li>
-          <li className="flex items-start gap-2"><ChevronRight className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />Platform fee is 20% for new clients, 15% for returning clients, and 10% when clients book via your direct link.</li>
+          <li className="flex items-start gap-2"><ChevronRight className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />Platform fee: 7% for new NextCut leads, 4% for returning clients, 3% via direct link. 0% (you keep 100%) when booked via your referral link.</li>
         </ul>
       </div>
 

@@ -49,15 +49,15 @@ export default function AdminSettings() {
 
       {/* Stripe Webhook URL */}
       <div>
-        <h1 className="font-heading font-bold text-2xl text-slate-900">Platform Settings</h1>
+        <h1 className="font-heading font-bold text-2xl">Platform Settings</h1>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+      <div className="bg-card rounded-xl border border-border p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Webhook className="w-4 h-4 text-primary" />
-          <h2 className="font-heading font-semibold text-slate-900">Stripe Webhook Endpoint</h2>
+          <h2 className="font-heading font-semibold">Stripe Webhook Endpoint</h2>
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           Register this URL in your{" "}
           <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline">
             Stripe Dashboard → Webhooks
@@ -65,7 +65,7 @@ export default function AdminSettings() {
           . This endpoint accepts POST requests from Stripe, verifies the signature, and processes events — no authentication required.
         </p>
         <div className="flex gap-2 items-center">
-          <code className="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-mono break-all">
+          <code className="flex-1 text-xs bg-secondary border border-border rounded-lg px-3 py-2 text-foreground font-mono break-all">
             {WEBHOOK_URL}
           </code>
           <Button
@@ -80,9 +80,9 @@ export default function AdminSettings() {
             <Copy className="w-3.5 h-3.5" />
           </Button>
         </div>
-        <div className="text-xs text-slate-500 space-y-1">
+        <div className="text-xs text-muted-foreground space-y-1">
           <p><strong>Required events to subscribe:</strong></p>
-          <code className="block bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-600 leading-5">
+          <code className="block bg-secondary border border-border rounded-lg px-3 py-2 text-muted-foreground leading-5">
             checkout.session.completed<br />
             payment_intent.succeeded<br />
             payment_intent.payment_failed<br />
@@ -98,16 +98,16 @@ export default function AdminSettings() {
       </div>
 
       <div>
-        <h2 className="font-heading font-bold text-xl text-slate-900">Commission Rules</h2>
-        <p className="text-sm text-slate-500 mt-1">
+        <h2 className="font-heading font-bold text-xl">Commission Rules</h2>
+        <p className="text-sm text-muted-foreground mt-1">
           Commission is determined by how the client was acquired — not a single global rate.
           Tips are always 100% barber's. Commission applies to service price only.
         </p>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
-        <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-        <div className="text-xs text-blue-700 space-y-1">
+      <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-3">
+        <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+        <div className="text-xs text-primary space-y-1">
           <p><strong>Priority order:</strong> Barber-direct &gt; Repeat client &gt; New NextCut lead</p>
           <p>Commission is locked onto the booking at creation and never retroactively changed.</p>
           <p>Cancelled and no-show bookings never generate commission.</p>
@@ -121,21 +121,21 @@ export default function AdminSettings() {
           const fee = (ex.price * draft[type]).toFixed(2);
           const earn = (ex.price - ex.price * draft[type]).toFixed(2);
           return (
-            <div key={type} className="bg-white rounded-xl border border-slate-200 p-5">
+            <div key={type} className="bg-card rounded-xl border border-border p-5">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                      type === "new_nextcut_lead" ? "bg-purple-100 text-purple-700" :
-                      type === "repeat_client" ? "bg-blue-100 text-blue-700" :
-                      "bg-emerald-100 text-emerald-700"
+                      type === "new_nextcut_lead" ? "bg-purple-500/20 text-purple-300" :
+                      type === "repeat_client" ? "bg-blue-500/20 text-blue-300" :
+                      "bg-primary/20 text-primary"
                     }`}>
                       {COMMISSION_LABELS[type]}
                     </span>
-                    <span className="font-heading font-bold text-slate-900">{pct.toFixed(0)}%</span>
+                    <span className="font-heading font-bold">{pct.toFixed(0)}%</span>
                   </div>
-                  <p className="text-xs text-slate-500 mb-3">{RULE_DESCRIPTIONS[type]}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground mb-3">{RULE_DESCRIPTIONS[type]}</p>
+                  <p className="text-xs text-muted-foreground/70">
                     Example: $50 {ex.label} → platform earns <strong>${fee}</strong>, barber earns <strong>${earn}</strong>
                   </p>
                 </div>
@@ -157,9 +157,9 @@ export default function AdminSettings() {
         })}
       </div>
 
-      <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-500 space-y-1">
-        <p><strong>Default rates:</strong> New lead 20% · Repeat client 15% · Barber direct 10%</p>
-        <p>These defaults match industry-standard marketplace commission structures. Adjust only if needed.</p>
+      <div className="bg-secondary rounded-xl p-4 text-xs text-muted-foreground space-y-1">
+        <p><strong>Platform defaults:</strong> New lead 7% · Repeat client 4% · Barber direct 3% · Referral link 0% (fixed, always)</p>
+        <p>Barbers who share their referral link always keep 100% — this rate is locked and cannot be changed here.</p>
       </div>
 
       <Button onClick={save} disabled={saving || !isDirty} className="w-full">

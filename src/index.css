@@ -9,65 +9,65 @@
     --font-heading: 'Inter', system-ui, sans-serif;
     --font-body: 'Inter', system-ui, sans-serif;
 
-    /* Dark-first design system */
-    --background: 240 6% 6%;         /* #0A0A0B */
-    --foreground: 240 5% 96%;        /* #F4F4F5 */
-    --card: 240 4% 11%;              /* #18181B */
-    --card-foreground: 240 5% 96%;
-    --popover: 240 4% 11%;
-    --popover-foreground: 240 5% 96%;
-    --primary: 21 100% 50%;          /* #FF5C00 orange */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 4% 16%;         /* #27272A */
-    --secondary-foreground: 240 5% 96%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 4% 64%;  /* #A1A1AA */
-    --accent: 240 4% 16%;
-    --accent-foreground: 240 5% 96%;
-    --destructive: 0 84% 60%;        /* #EF4444 */
+    /* ── NextCut Dark Teal Design System ── */
+    --background: 196 40% 6%;          /* #070F12 deep dark teal-navy */
+    --foreground: 190 20% 94%;         /* #EEF6F7 off-white */
+    --card: 196 38% 10%;               /* #0E1C21 card surface */
+    --card-foreground: 190 20% 94%;
+    --popover: 196 38% 10%;
+    --popover-foreground: 190 20% 94%;
+    --primary: 178 100% 40%;           /* #00CCCC bright teal accent */
+    --primary-foreground: 196 40% 5%;  /* very dark for contrast on bright teal */
+    --secondary: 196 35% 14%;          /* #162028 */
+    --secondary-foreground: 190 20% 85%;
+    --muted: 196 35% 14%;
+    --muted-foreground: 190 15% 55%;   /* #6FA3A8 muted teal-grey */
+    --accent: 196 38% 16%;             /* #1A2B32 slightly lighter surface */
+    --accent-foreground: 190 20% 94%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 16%;            /* #27272A */
-    --input: 240 4% 16%;
-    --ring: 21 100% 50%;
-    --success: 160 84% 39%;          /* #10B981 */
-    --warning: 38 92% 50%;           /* #F59E0B */
-    --chart-1: 21 100% 50%;
+    --border: 196 30% 16%;             /* #1C2F36 subtle border */
+    --input: 196 30% 16%;
+    --ring: 178 100% 40%;
+    --success: 160 84% 39%;
+    --warning: 38 92% 50%;
+    --chart-1: 178 100% 40%;
     --chart-2: 160 84% 39%;
     --chart-3: 38 92% 50%;
     --chart-4: 210 40% 50%;
     --chart-5: 280 65% 60%;
     --radius: 0.75rem;
-    --sidebar-background: 240 4% 8%;
-    --sidebar-foreground: 240 5% 90%;
-    --sidebar-primary: 21 100% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 14%;
-    --sidebar-accent-foreground: 240 5% 90%;
-    --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 21 100% 50%;
+    --sidebar-background: 196 42% 7%;
+    --sidebar-foreground: 190 20% 88%;
+    --sidebar-primary: 178 100% 40%;
+    --sidebar-primary-foreground: 196 40% 5%;
+    --sidebar-accent: 196 38% 12%;
+    --sidebar-accent-foreground: 190 20% 88%;
+    --sidebar-border: 196 30% 14%;
+    --sidebar-ring: 178 100% 40%;
   }
 
-  /* Light mode override (if user enables) */
+  /* Light mode override */
   .light {
     --background: 0 0% 98%;
-    --foreground: 240 10% 8%;
+    --foreground: 196 40% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 8%;
+    --card-foreground: 196 40% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 8%;
-    --primary: 21 100% 50%;
+    --popover-foreground: 196 40% 8%;
+    --primary: 178 90% 35%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 94%;
-    --secondary-foreground: 240 10% 15%;
-    --muted: 240 5% 94%;
-    --muted-foreground: 240 4% 45%;
-    --accent: 240 5% 94%;
-    --accent-foreground: 240 10% 15%;
+    --secondary: 190 20% 94%;
+    --secondary-foreground: 196 40% 10%;
+    --muted: 190 20% 94%;
+    --muted-foreground: 190 15% 45%;
+    --accent: 190 20% 94%;
+    --accent-foreground: 196 40% 10%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 90%;
-    --input: 240 5% 90%;
-    --ring: 21 100% 50%;
+    --border: 190 20% 88%;
+    --input: 190 20% 88%;
+    --ring: 178 90% 35%;
   }
 }
 
@@ -104,6 +104,11 @@
   background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--secondary)) 50%, hsl(var(--muted)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+/* Teal glow utility */
+.glow-teal {
+  box-shadow: 0 0 24px 0 hsl(178 100% 40% / 0.25);
 }
 
 /* Reduced motion */

@@ -75,10 +75,12 @@ export default function Layout() {
       {/* Top Nav - Desktop */}
       <header className="hidden md:flex items-center justify-between px-8 py-4 bg-card border-b border-border sticky top-0 z-50 backdrop-blur-xl bg-card/80">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center glow-teal">
             <Scissors className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-heading font-bold text-xl tracking-tight">NextCut</span>
+          <span className="font-heading font-bold text-xl tracking-tight">
+            <span className="text-foreground">Next</span><span className="text-primary">Cut</span>
+          </span>
         </Link>
         <nav className="flex items-center gap-1">
           {navItems.map((item) => (

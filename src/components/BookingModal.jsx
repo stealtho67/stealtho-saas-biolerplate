@@ -3,10 +3,67 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, CheckCircle2, Loader2, CreditCard, Banknote } from "lucide-react";
+import { Calendar, Clock, CheckCircle2, Loader2, CreditCard, Banknote, Info } from "lucide-react";
 import { toast } from "sonner";
 import { getCommissionRules, resolveCommissionType, calcCommission } from "@/lib/commissionRules";
 import { format, addDays, startOfToday } from "date-fns";
+
+// Booking summary with live commission preview
+function BookingSummary({ service, date, time, barber }) {
+  const [commissionInfo, setCommissionInfo] = useState(null);
+
+  useEffect(() => {
+    if (!service || !barber) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerSource = urlParams.get("source") || "marketplace";
+    base44.auth.me().then(async (user) => {
+      if (!user) return;
+      const { resolveCommissionType, getCommissionRules, calcCommission } = await import("@/lib/commissionRules");
+      const commissionType = await resolveCommissionType(user.email, barber.id, customerSource);
+      const rules = await getCommissionRules();
+      const rate = rules[commissionType] ?? 0;
+      const { platformFee, barberEarnings } = calcCommission(service.price, 0, rate);
+      setCommissionInfo({ commissionType, rate, platformFee, barberEarnings });
+    }).catch(() => {});
+  }, [service, barber]);
+
+  const isReferral = commissionInfo?.commissionType === "barber_referral_link";
+
+  return (
+    <div className="bg-secondary rounded-xl p-4 space-y-3">
+      <div className="flex justify-between text-sm">
+        <span className="text-muted-foreground">Service</span>
+        <span className="font-medium">{service?.service_name}</span>
+      </div>
+      <div className="flex justify-between text-sm">
+        <span className="text-muted-foreground">Date</span>
+        <span className="font-medium flex items-center gap-1">
+          <Calendar className="w-3.5 h-3.5" />
+          {date && format(date, "MMM d, yyyy")}
+        </span>
+      </div>
+      <div className="flex justify-between text-sm">
+        <span className="text-muted-foreground">Time</span>
+        <span className="font-medium flex items-center gap-1">
+          <Clock className="w-3.5 h-3.5" />
+          {time}
+        </span>
+      </div>
+      <div className="border-t border-border pt-3 flex justify-between">
+        <span className="font-medium">Total</span>
+        <span className="font-heading font-bold text-lg">${service?.price}</span>
+      </div>
+      {commissionInfo && (
+        <div className={`mt-2 rounded-lg p-2.5 text-xs flex items-start gap-2 ${isReferral ? "bg-primary/10 border border-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          {isReferral
+            ? "Booked via referral link — 0% platform fee. Barber keeps 100%."
+            : `Platform fee: ${Math.round(commissionInfo.rate * 100)}% ($${commissionInfo.platformFee.toFixed(2)}) · Barber earns: $${commissionInfo.barberEarnings.toFixed(2)}`}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const TIME_SLOTS = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -290,30 +347,13 @@ export default function BookingModal({ open, onClose, barber, services }) {
             {step === 4 && (
               <div className="mt-4 space-y-4">
                 {/* Summary */}
-                <div className="bg-secondary rounded-xl p-4 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Service</span>
-                    <span className="font-medium">{selectedService?.service_name}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Date</span>
-                    <span className="font-medium flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {selectedDate && format(selectedDate, "MMM d, yyyy")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Time</span>
-                    <span className="font-medium flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {selectedTime}
-                    </span>
-                  </div>
-                  <div className="border-t border-border pt-3 flex justify-between">
-                    <span className="font-medium">Total</span>
-                    <span className="font-heading font-bold text-lg">${selectedService?.price}</span>
-                  </div>
-                </div>
+                <BookingSummary
+                  service={selectedService}
+                  date={selectedDate}
+                  time={selectedTime}
+                  barber={barber}
+                />
+
 
                 <Textarea
                   placeholder="Any special requests? (optional)"

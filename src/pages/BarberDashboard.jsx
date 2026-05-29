@@ -394,29 +394,62 @@ function OverviewTab({ barber, services, bookings, onNavigate, onBarberUpdate })
 }
 
 function DirectBookingLink({ barber, rates }) {
-  const directPct = rates ? Math.round(rates.barber_direct_client * 100) : "...";
   const newPct = rates ? Math.round(rates.new_nextcut_lead * 100) : "...";
+  const referralLink = `${window.location.origin}/barber/${barber.id}?source=barber_referral_link`;
+  const directLink = `${window.location.origin}/barber/${barber.id}?source=barber_direct_link`;
+  const directPct = rates ? Math.round(rates.barber_direct_client * 100) : "...";
+
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
-      <div className="flex items-center gap-2 mb-1">
+    <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+      <div className="flex items-center gap-2">
         <Link2 className="w-4 h-4 text-primary" />
-        <h3 className="font-heading font-semibold text-sm">Your Direct Booking Link</h3>
+        <h3 className="font-heading font-semibold text-sm">Your Shareable Links</h3>
       </div>
-      <p className="text-xs text-muted-foreground mb-3">
-        Share with your existing clients — earns you a lower {directPct}% fee vs {newPct}% for new marketplace leads.
-      </p>
-      <div className="flex gap-2">
-        <input
-          readOnly
-          value={`${window.location.origin}/barber/${barber.id}?source=barber_direct_link`}
-          className="flex-1 text-xs bg-secondary border border-border rounded-lg px-3 py-2 text-muted-foreground"
-        />
-        <Button size="sm" variant="outline" onClick={() => {
-          navigator.clipboard.writeText(`${window.location.origin}/barber/${barber.id}?source=barber_direct_link`);
-          toast.success("Link copied!");
-        }}>
-          <Copy className="w-3.5 h-3.5 mr-1" /> Copy
-        </Button>
+
+      {/* Referral link — 0% */}
+      <div className="p-4 rounded-xl bg-primary/10 border border-primary/30">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-bold text-primary uppercase tracking-wide">⚡ 0% Commission</span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-2">
+          Your <strong className="text-foreground">referral link</strong> — share this anywhere. Clients who book through this link pay <strong className="text-primary">0% platform fee</strong>. You keep 100% of every ticket (only Stripe card processing applies).
+        </p>
+        <div className="flex gap-2">
+          <input
+            readOnly
+            value={referralLink}
+            className="flex-1 text-xs bg-secondary border border-border rounded-lg px-3 py-2 text-muted-foreground"
+          />
+          <Button size="sm" variant="outline" className="shrink-0" onClick={() => {
+            navigator.clipboard.writeText(referralLink);
+            toast.success("Referral link copied! Share it and keep 100%.");
+          }}>
+            <Copy className="w-3.5 h-3.5 mr-1" /> Copy
+          </Button>
+        </div>
+      </div>
+
+      {/* Direct link — reduced fee */}
+      <div className="p-4 rounded-xl bg-secondary border border-border">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Direct Link — {directPct}% fee</span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-2">
+          For clients already in your network. Reduced {directPct}% fee vs {newPct}% for new marketplace leads.
+        </p>
+        <div className="flex gap-2">
+          <input
+            readOnly
+            value={directLink}
+            className="flex-1 text-xs bg-background border border-border rounded-lg px-3 py-2 text-muted-foreground"
+          />
+          <Button size="sm" variant="outline" className="shrink-0" onClick={() => {
+            navigator.clipboard.writeText(directLink);
+            toast.success("Direct link copied!");
+          }}>
+            <Copy className="w-3.5 h-3.5 mr-1" /> Copy
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -424,19 +457,21 @@ function DirectBookingLink({ barber, rates }) {
 
 function EarningsBreakdown({ bookings, rates }) {
   const colorMap = {
-    new_nextcut_lead: "bg-purple-100 text-purple-700",
-    repeat_client: "bg-blue-100 text-blue-700",
-    barber_direct_client: "bg-emerald-100 text-emerald-700",
+    new_nextcut_lead: "bg-purple-500/20 text-purple-300",
+    repeat_client: "bg-blue-500/20 text-blue-300",
+    barber_direct_client: "bg-teal-500/20 text-teal-300",
+    barber_referral_link: "bg-primary/20 text-primary",
   };
   const getRateDesc = (type) => {
     if (!rates) return "Loading rates...";
-    const pct = Math.round(rates[type] * 100);
+    const pct = Math.round((rates[type] || 0) * 100);
     const labels = {
       new_nextcut_lead: `New NextCut leads — ${pct}% fee`,
       repeat_client: `Returning clients — ${pct}% fee`,
-      barber_direct_client: `Your own clients — ${pct}% fee`,
+      barber_direct_client: `Direct clients — ${pct}% fee`,
+      barber_referral_link: "Via your referral link — 0% commission · you keep 100%",
     };
-    return labels[type];
+    return labels[type] || `${pct}% fee`;
   };
 
   return (
@@ -446,7 +481,7 @@ function EarningsBreakdown({ bookings, rates }) {
         Commission depends on how the client found you. Tips are always 100% yours and never shared.
       </p>
       <div className="space-y-3">
-        {["new_nextcut_lead", "repeat_client", "barber_direct_client"].map(type => {
+        {["new_nextcut_lead", "repeat_client", "barber_direct_client", "barber_referral_link"].map(type => {
           const typeBookings = bookings.filter(b => (b.commission_type || "new_nextcut_lead") === type);
           if (typeBookings.length === 0) return null;
           const gross = typeBookings.reduce((s, b) => s + (b.service_price || b.price || 0), 0);

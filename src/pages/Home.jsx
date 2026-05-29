@@ -50,12 +50,12 @@ export default function Home() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-primary/10 blur-3xl" />
         </div>
         <div className="relative max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5 border border-primary/20">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
             Now live in your city
           </div>
           <h1 className="font-heading font-black text-4xl md:text-6xl mb-4 tracking-tight">
-            Book your next cut<br />
+            Book your next <span className="text-foreground">cut</span><br />
             <span className="text-primary">in minutes.</span>
           </h1>
           <p className="text-muted-foreground text-base md:text-lg mb-8 max-w-lg mx-auto">
