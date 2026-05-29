@@ -6,7 +6,8 @@ export default function BarberCard({ barber }) {
   return (
     <Link
       to={`/barber/${barber.id}`}
-      className="group block bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+      data-no-lift
+      className="group card-interactive block bg-card rounded-2xl overflow-hidden"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         {barber.profile_photo ? (

@@ -6,7 +6,8 @@ export default function ShopCard({ shop, barberCount = 0 }) {
   return (
     <Link
       to={`/barbershop/${shop.id}`}
-      className="group block bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+      data-no-lift
+      className="group card-interactive block bg-card rounded-2xl overflow-hidden"
     >
       {/* Banner / Logo area */}
       <div className="relative h-32 bg-gradient-to-br from-primary/20 to-accent overflow-hidden">

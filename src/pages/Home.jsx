@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import BarberCard from "@/components/BarberCard";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { Scissors, MapPin, Star, Shield, Clock, ChevronRight, Search, Users, Building2, CheckCircle2 } from "lucide-react";
 
 function BarberGridSkeleton() {
@@ -25,6 +26,10 @@ export default function Home() {
   const [featuredBarbers, setFeaturedBarbers] = useState([]);
   const [loadingBarbers, setLoadingBarbers] = useState(true);
   const [searchCity, setSearchCity] = useState("");
+  const howItWorksRef = useScrollReveal({ stagger: 100 });
+  const featuredRef = useScrollReveal({ stagger: 60 });
+  const whyJoinRef = useScrollReveal({ stagger: 120 });
+  const trustRef = useScrollReveal({ stagger: 80 });
 
   useEffect(() => {
     base44.entities.Barber.filter({ status: "active", is_featured: true }, "-rating", 8)
@@ -87,15 +92,15 @@ export default function Home() {
       </section>
 
       {/* ── How It Works ── */}
-      <section className="px-4 py-16 max-w-4xl mx-auto">
-        <h2 className="font-heading font-bold text-2xl md:text-3xl text-center mb-10">How it works</h2>
+      <section className="px-4 py-16 max-w-4xl mx-auto" ref={howItWorksRef}>
+        <h2 data-reveal className="font-heading font-bold text-2xl md:text-3xl text-center mb-10">How it works</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             { step: "1", icon: Search, title: "Find a barber", body: "Search by city or specialty. Browse portfolios and real reviews." },
             { step: "2", icon: Scissors, title: "Pick your service", body: "Choose a service, pick a time that works for you, and confirm." },
             { step: "3", icon: CheckCircle2, title: "Show up fresh", body: "You're booked. Show up, get cut, leave happy." },
           ].map(({ step, icon: Icon, title, body }) => (
-            <div key={step} className="flex flex-col items-center text-center p-6 rounded-2xl bg-card border border-border">
+            <div data-reveal key={step} className="card-interactive flex flex-col items-center text-center p-6 rounded-2xl bg-card">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                 <Icon className="w-6 h-6 text-primary" />
               </div>
@@ -108,8 +113,8 @@ export default function Home() {
       </section>
 
       {/* ── Featured Barbers ── */}
-      <section className="px-4 py-12 max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <section className="px-4 py-12 max-w-5xl mx-auto" ref={featuredRef}>
+        <div data-reveal className="flex items-center justify-between mb-6">
           <h2 className="font-heading font-bold text-xl md:text-2xl">Featured barbers</h2>
           <Link to="/explore" className="text-sm text-primary hover:underline flex items-center gap-1">
             See all <ChevronRight className="w-4 h-4" />
@@ -121,7 +126,7 @@ export default function Home() {
         ) : featuredBarbers.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {featuredBarbers.map(barber => (
-              <BarberCard key={barber.id} barber={barber} />
+              <div data-reveal key={barber.id}><BarberCard barber={barber} /></div>
             ))}
           </div>
         ) : (
@@ -137,10 +142,10 @@ export default function Home() {
       </section>
 
       {/* ── Why Join ── */}
-      <section className="px-4 py-16">
+      <section className="px-4 py-16" ref={whyJoinRef}>
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-6">
           {/* Barbers CTA */}
-          <div className="p-6 rounded-2xl bg-card border border-border">
+          <div data-reveal className="card-interactive p-6 rounded-2xl bg-card">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
               <Scissors className="w-5 h-5 text-primary" />
             </div>
@@ -161,7 +166,7 @@ export default function Home() {
           </div>
 
           {/* Shops CTA */}
-          <div className="p-6 rounded-2xl bg-card border border-border">
+          <div data-reveal className="card-interactive p-6 rounded-2xl bg-card">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
               <Building2 className="w-5 h-5 text-primary" />
             </div>
@@ -184,15 +189,15 @@ export default function Home() {
       </section>
 
       {/* ── Trust Section ── */}
-      <section className="px-4 py-12 max-w-3xl mx-auto text-center">
-        <h2 className="font-heading font-bold text-xl md:text-2xl mb-8">Built for trust</h2>
+      <section className="px-4 py-12 max-w-3xl mx-auto text-center" ref={trustRef}>
+        <h2 data-reveal className="font-heading font-bold text-xl md:text-2xl mb-8">Built for trust</h2>
         <div className="grid grid-cols-3 gap-4">
           {[
             { icon: Shield, label: "License verified", desc: "Every barber is license-checked before going live" },
             { icon: Star, label: "Real reviews", desc: "Reviews come from verified clients only" },
             { icon: Users, label: "Community first", desc: "Built to support independent barbers, not big chains" },
           ].map(({ icon: Icon, label, desc }) => (
-            <div key={label} className="flex flex-col items-center p-4 rounded-xl bg-card border border-border">
+            <div data-reveal key={label} className="card-interactive flex flex-col items-center p-4 rounded-xl bg-card">
               <Icon className="w-5 h-5 text-primary mb-2" />
               <p className="font-semibold text-xs mb-1">{label}</p>
               <p className="text-muted-foreground text-xs leading-relaxed hidden md:block">{desc}</p>

@@ -87,7 +87,8 @@ export default function Layout() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              data-no-lift
+              className={`nav-link-underline flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive(item.path)
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
