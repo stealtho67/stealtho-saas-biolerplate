@@ -327,13 +327,64 @@ Deno.serve(async (req) => {
         break;
       }
 
-      // ── INVOICE EVENTS (logged, no action needed) ─────────────────────────
+      // ── INVOICE EVENTS ────────────────────────────────────────────────────
 
-      case 'invoice.created':
-      case 'invoice.paid':
+      case 'invoice.created': {
+        const invoice = event.data.object;
+        console.log(`[webhook] invoice.created: id=${invoice.id}`);
+        eventStatus = 'ignored';
+        eventNotes = `invoice_id=${invoice.id}`;
+        break;
+      }
+
+      case 'invoice.paid': {
+        const invoice = event.data.object;
+        const stripeInvoiceId = invoice.id;
+        const connectedAccount = event.account || null;
+        console.log(`[webhook] invoice.paid: id=${stripeInvoiceId} account=${connectedAccount} amount=$${((invoice.amount_paid || 0) / 100).toFixed(2)}`);
+
+        // Update StripeInvoice record
+        const dbInvoices = await base44.asServiceRole.entities.StripeInvoice.filter({ stripe_invoice_id: stripeInvoiceId });
+        if (dbInvoices.length > 0) {
+          await base44.asServiceRole.entities.StripeInvoice.update(dbInvoices[0].id, {
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+          });
+          eventNotes = `invoice ${stripeInvoiceId} marked paid`;
+
+          // If linked to a booking, update it too
+          const bookingId = dbInvoices[0].booking_id || invoice.metadata?.booking_id;
+          if (bookingId) {
+            await base44.asServiceRole.entities.Booking.update(bookingId, {
+              payment_status: 'paid',
+              payment_method: 'stripe',
+              paid_at: new Date().toISOString(),
+              stripe_payment_intent_id: invoice.payment_intent || null,
+            }).catch(() => {});
+          }
+        } else {
+          // Try to find via booking metadata
+          const bookingId = invoice.metadata?.booking_id;
+          if (bookingId) {
+            await base44.asServiceRole.entities.Booking.update(bookingId, {
+              payment_status: 'paid',
+              payment_method: 'stripe',
+              paid_at: new Date().toISOString(),
+              stripe_payment_intent_id: invoice.payment_intent || null,
+            }).catch(() => {});
+          }
+          eventNotes = `invoice_id=${stripeInvoiceId} (no local record found)`;
+        }
+        break;
+      }
+
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        console.log(`[webhook] ${event.type}: invoice_id=${invoice.id} amount=$${((invoice.amount_due || 0) / 100).toFixed(2)}`);
+        console.warn(`[webhook] invoice.payment_failed: id=${invoice.id}`);
+        const failedInvoices = await base44.asServiceRole.entities.StripeInvoice.filter({ stripe_invoice_id: invoice.id });
+        if (failedInvoices.length > 0) {
+          await base44.asServiceRole.entities.StripeInvoice.update(failedInvoices[0].id, { status: 'open' }).catch(() => {});
+        }
         eventNotes = `invoice_id=${invoice.id}`;
         break;
       }

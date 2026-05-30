@@ -110,6 +110,16 @@
       ],
       "default": "not_connected"
     },
+    "no_show_fee": {
+      "type": "number",
+      "default": 0,
+      "description": "Dollar amount to charge on no-show (0 = disabled)"
+    },
+    "no_show_policy_hours": {
+      "type": "number",
+      "default": 24,
+      "description": "Hours before appointment that cancellation is free"
+    },
     "booking_delivery_method": {
       "type": "string",
       "enum": [

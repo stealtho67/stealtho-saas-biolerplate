@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import {
   Calendar, DollarSign, Users, Star, TrendingUp, Clock,
   Info, Link2, Copy, LayoutDashboard, UserCircle, Scissors,
-  Images, CreditCard, Bell, Building2
+  Images, CreditCard, Bell, Building2, FileText
 } from "lucide-react";
 import { COMMISSION_LABELS, getCommissionRules } from "@/lib/commissionRules";
 import ProfileEditor from "@/components/barber/ProfileEditor";
@@ -16,6 +16,8 @@ import StatusHeader from "@/components/barber/StatusHeader";
 import BarberInfoTab from "@/components/barber/BarberInfoTab";
 import BookingDeliveryEditor from "@/components/barber/BookingDeliveryEditor";
 import BarbershopTab from "@/components/barber/BarbershopTab";
+import CreateInvoiceModal from "@/components/barber/CreateInvoiceModal";
+import InvoicesList from "@/components/barber/InvoicesList";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +25,7 @@ import { toast } from "sonner";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "invoices", label: "Invoices", icon: FileText },
   { id: "profile", label: "Profile", icon: UserCircle },
   { id: "services", label: "Services", icon: Scissors },
   { id: "portfolio", label: "Portfolio", icon: Images },
@@ -40,6 +43,8 @@ export default function BarberDashboard() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [invoiceRefreshKey, setInvoiceRefreshKey] = useState(0);
 
   useEffect(() => { loadDashboard(); }, []);
 
@@ -186,7 +191,28 @@ export default function BarberDashboard() {
             bookings={bookings}
             onNavigate={setActiveTab}
             onBarberUpdate={setBarber}
+            onOpenInvoice={() => setShowInvoiceModal(true)}
           />
+        </TabsContent>
+
+        {/* ── INVOICES TAB ── */}
+        <TabsContent value="invoices">
+          {barber?.payouts_enabled ? (
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <InvoicesList
+                key={invoiceRefreshKey}
+                barber={barber}
+                onCreateNew={() => setShowInvoiceModal(true)}
+              />
+            </div>
+          ) : (
+            <div className="bg-card rounded-2xl border border-border p-6 text-center space-y-3">
+              <CreditCard className="w-10 h-10 text-muted-foreground/30 mx-auto" />
+              <p className="font-heading font-semibold">Connect Stripe first</p>
+              <p className="text-sm text-muted-foreground">You need an active Stripe account before you can send invoices to clients.</p>
+              <Button size="sm" onClick={() => setActiveTab("payouts")}>Go to Payouts Setup</Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* ── PROFILE TAB ── */}
@@ -263,6 +289,20 @@ export default function BarberDashboard() {
           <BarberInfoTab barber={barber} />
         </TabsContent>
       </Tabs>
+
+      {/* Invoice modal */}
+      {showInvoiceModal && barber && (
+        <CreateInvoiceModal
+          barber={barber}
+          services={services}
+          open={showInvoiceModal}
+          onClose={() => setShowInvoiceModal(false)}
+          onCreated={() => {
+            setShowInvoiceModal(false);
+            setInvoiceRefreshKey(k => k + 1);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -270,7 +310,7 @@ export default function BarberDashboard() {
 // ────────────────────────────────────────────────
 // Overview sub-component
 // ────────────────────────────────────────────────
-function OverviewTab({ barber, services, bookings, onNavigate, onBarberUpdate }) {
+function OverviewTab({ barber, services, bookings, onNavigate, onBarberUpdate, onOpenInvoice }) {
   const [rates, setRates] = useState(null);
   const [availableNow, setAvailableNow] = useState(barber.is_available_now || false);
   useEffect(() => { getCommissionRules().then(setRates); }, []);
@@ -359,7 +399,7 @@ function OverviewTab({ barber, services, bookings, onNavigate, onBarberUpdate })
       </div>
 
       {/* Stripe Payouts — inline preview with navigate CTA */}
-      {barber.stripe_status !== "active" && (
+      {barber.stripe_status !== "active" ? (
         <div className="bg-card rounded-2xl border border-border p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -373,6 +413,23 @@ function OverviewTab({ barber, services, bookings, onNavigate, onBarberUpdate })
             <Button size="sm" onClick={() => onNavigate("payouts")} className="shrink-0 gap-1.5">
               <CreditCard className="w-3.5 h-3.5" />
               {barber.stripe_status === "onboarding_in_progress" ? "Continue" : "Set Up"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <CreditCard className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Payouts Active ✓</p>
+                <p className="text-xs text-muted-foreground">Earnings go straight to your bank</p>
+              </div>
+            </div>
+            <Button size="sm" onClick={onOpenInvoice} className="shrink-0 gap-1.5">
+              <FileText className="w-3.5 h-3.5" />Send Invoice
             </Button>
           </div>
         </div>
