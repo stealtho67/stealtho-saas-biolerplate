@@ -151,10 +151,10 @@ export default function Home() {
             </div>
             <h3 className="font-heading font-bold text-lg mb-2">Are you a barber?</h3>
             <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
-              Get discovered locally, showcase your portfolio, and keep clients coming back — free to join, no commission.
+              Get discovered locally, showcase your portfolio, and keep clients coming back. Free to join — we only earn when we bring you a new client.
             </p>
             <ul className="space-y-1.5 mb-5">
-              {["Free founding profile", "Keep your booking link", "80–90% of every booking"].map(item => (
+              {["Free profile + booking page", "0% on your own referred clients", "Auto-charge no-shows from day one"].map(item => (
                 <li key={item} className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />{item}
                 </li>
@@ -221,13 +221,16 @@ export default function Home() {
 
       {/* ── Footer ── */}
       <footer className="border-t border-border px-4 py-10">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-          <div>
+        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-6 text-sm">
+          <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
-              <Scissors className="w-4 h-4 text-primary" />
-              <span className="font-bold">NextCut</span>
+              <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+                <Scissors className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <span className="font-heading font-bold">NextCut</span>
             </div>
-            <p className="text-muted-foreground text-xs leading-relaxed">The local marketplace for barbers and clients.</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">The free booking platform built for barbers.</p>
+            <p className="text-muted-foreground text-xs mt-1">A StealthO company.</p>
           </div>
           <div>
             <p className="font-semibold mb-2">For Clients</p>
@@ -240,22 +243,38 @@ export default function Home() {
           <div>
             <p className="font-semibold mb-2">For Barbers</p>
             <ul className="space-y-1 text-muted-foreground text-xs">
-              <li><Link to="/apply" className="hover:text-foreground">Join as Barber</Link></li>
+              <li><Link to="/apply" className="hover:text-foreground">Join Free</Link></li>
               <li><Link to="/apply?type=shop" className="hover:text-foreground">List Your Shop</Link></li>
+              <li><Link to="/pricing" className="hover:text-foreground">Pricing</Link></li>
               <li><Link to="/dashboard" className="hover:text-foreground">Dashboard</Link></li>
             </ul>
           </div>
           <div>
             <p className="font-semibold mb-2">Company</p>
             <ul className="space-y-1 text-muted-foreground text-xs">
-              <li><span className="opacity-50">About</span></li>
-              <li><span className="opacity-50">Contact</span></li>
-              <li><span className="opacity-50">Privacy</span></li>
+              <li><Link to="/about" className="hover:text-foreground">About</Link></li>
+              <li><Link to="/how-it-works" className="hover:text-foreground">How It Works</Link></li>
+              <li><Link to="/faq" className="hover:text-foreground">FAQ</Link></li>
+              <li><a href="mailto:support@nextcut.app" className="hover:text-foreground">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold mb-2">Legal</p>
+            <ul className="space-y-1 text-muted-foreground text-xs">
+              <li><Link to="/terms" className="hover:text-foreground">Terms of Service</Link></li>
+              <li><Link to="/privacy" className="hover:text-foreground">Privacy Policy</Link></li>
             </ul>
           </div>
         </div>
-        <div className="max-w-4xl mx-auto mt-8 pt-6 border-t border-border text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} NextCut. All rights reserved.
+        <div className="max-w-4xl mx-auto mt-8 pt-6 border-t border-border flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>© {new Date().getFullYear()} NextCut — a StealthO company. All rights reserved.</span>
+          <span>
+            <a href="mailto:support@nextcut.app" className="hover:text-foreground">support@nextcut.app</a>
+            {" · "}
+            <Link to="/terms" className="hover:text-foreground">Terms</Link>
+            {" · "}
+            <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+          </span>
         </div>
       </footer>
     </div>

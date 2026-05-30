@@ -28,6 +28,12 @@ import BarberDashboardPreview from './pages/admin/BarberDashboardPreview';
 import Barbershops from './pages/Barbershops';
 import BarbershopProfile from './pages/BarbershopProfile';
 import AdminBarbershops from './pages/admin/BarbershopManagement';
+import Pricing from './pages/Pricing';
+import HowItWorks from './pages/HowItWorks';
+import About from './pages/About';
+import FAQ from './pages/FAQ';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -88,6 +94,12 @@ const AuthenticatedApp = () => {
         <Route path="/apply" element={<PageWrapper><BarberApplication /></PageWrapper>} />
         <Route path="/barbershops" element={<PageWrapper><Barbershops /></PageWrapper>} />
         <Route path="/barbershop/:id" element={<PageWrapper><BarbershopProfile /></PageWrapper>} />
+        <Route path="/pricing" element={<PageWrapper><Pricing /></PageWrapper>} />
+        <Route path="/how-it-works" element={<PageWrapper><HowItWorks /></PageWrapper>} />
+        <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
+        <Route path="/faq" element={<PageWrapper><FAQ /></PageWrapper>} />
+        <Route path="/terms" element={<PageWrapper><Terms /></PageWrapper>} />
+        <Route path="/privacy" element={<PageWrapper><Privacy /></PageWrapper>} />
       </Route>
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<PageWrapper><AdminOverview /></PageWrapper>} />
