@@ -23,6 +23,17 @@
       ],
       "default": "processed"
     },
+    "source": {
+      "type": "string",
+      "enum": [
+        "account_snapshot",
+        "connected_snapshot",
+        "connected_thin",
+        "unknown"
+      ],
+      "default": "unknown",
+      "description": "Which webhook destination this event came from"
+    },
     "notes": {
       "type": "string",
       "description": "Optional debug info"
