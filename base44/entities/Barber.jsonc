@@ -146,6 +146,39 @@
     "barbershop_id": {
       "type": "string",
       "description": "ID of the Barbershop this barber belongs to (optional). Null means solo/independent barber."
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "starter",
+        "growth",
+        "pro",
+        "spotlight"
+      ],
+      "default": "starter",
+      "description": "Current subscription plan"
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "past_due",
+        "canceled",
+        "trialing"
+      ],
+      "description": "Stripe subscription status (null = free/starter)"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID (cus_xxx) for subscription billing"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID (sub_xxx)"
+    },
+    "current_period_end": {
+      "type": "string",
+      "description": "ISO timestamp of when the current billing period ends"
     }
   },
   "required": [

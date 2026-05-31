@@ -11,17 +11,23 @@
  * - Always returns 200 for verified events (even if already processed)
  * - Never redirects, never requires login, never returns HTML
  *
- * Handled events:
- *   checkout.session.completed       — mark booking paid
- *   payment_intent.succeeded         — mark booking paid + confirmed
- *   payment_intent.payment_failed    — cancel pending booking
- *   account.updated                  — sync barber stripe_status
- *   account.application.deauthorized — reset barber stripe fields
- *   payout.paid                      — log payout
- *   payout.failed                    — log failure
- *   invoice.created                  — log (no-op)
- *   invoice.paid                     — log (no-op)
- *   invoice.payment_failed           — log (no-op)
+ * PLATFORM events (your account webhook):
+ *   checkout.session.completed         — mark booking paid OR activate subscription plan
+ *   customer.subscription.created      — set barber plan + subscription_status
+ *   customer.subscription.updated      — update barber plan + subscription_status
+ *   customer.subscription.deleted      — cancel barber plan → starter
+ *   invoice.paid                       — mark StripeInvoice/Booking paid; renew subscription
+ *   invoice.payment_failed             — mark subscription past_due
+ *   account.updated                    — sync barber stripe_status (Connect)
+ *   account.application.deauthorized   — reset barber stripe fields
+ *   payment_intent.succeeded           — mark booking paid + confirmed
+ *   payment_intent.payment_failed      — cancel pending booking
+ *
+ * CONNECTED ACCOUNT events (listen on connected accounts):
+ *   account.updated                    — same as above, handles event.account
+ *   invoice.paid                       — mark barber StripeInvoice paid
+ *   invoice.payment_succeeded          — alias for invoice.paid on connected accounts
+ *   payment_intent.succeeded           — mark booking paid
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
@@ -96,8 +102,32 @@ Deno.serve(async (req) => {
 
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const bookingId = session.metadata?.booking_id;
 
+        if (session.mode === 'subscription') {
+          // ── Subscription purchase: store stripe_customer_id on the barber ──
+          if (session.customer) {
+            const customerEmail = session.customer_details?.email || session.customer_email;
+            if (customerEmail) {
+              const subBarbers = await base44.asServiceRole.entities.Barber.filter({ user_email: customerEmail });
+              if (subBarbers.length > 0) {
+                if (!subBarbers[0].stripe_customer_id) {
+                  await base44.asServiceRole.entities.Barber.update(subBarbers[0].id, {
+                    stripe_customer_id: session.customer,
+                  });
+                  console.log(`[webhook] checkout subscription: stored customer ${session.customer} for barber ${subBarbers[0].id}`);
+                }
+                eventNotes = `subscription customer linked to barber ${subBarbers[0].id}`;
+              } else {
+                eventStatus = 'ignored';
+                eventNotes = `no barber for email ${customerEmail}`;
+              }
+            }
+          }
+          break;
+        }
+
+        // ── One-time booking checkout ─────────────────────────────────────
+        const bookingId = session.metadata?.booking_id;
         if (!bookingId) {
           console.log('[webhook] checkout.session.completed: no booking_id in metadata, skipping');
           eventStatus = 'ignored';
@@ -115,7 +145,6 @@ Deno.serve(async (req) => {
 
         const booking = bookings[0];
         if (booking.payment_status === 'paid') {
-          console.log(`[webhook] checkout.session.completed: booking ${bookingId} already paid`);
           eventStatus = 'ignored';
           eventNotes = 'already paid';
           break;
@@ -129,7 +158,6 @@ Deno.serve(async (req) => {
           paid_at: new Date().toISOString(),
           stripe_payment_intent_id: session.payment_intent,
         });
-
         console.log(`[webhook] checkout.session.completed: booking ${bookingId} → paid, status=${newStatus}`);
 
         const clientEmail = session.metadata?.client_email || session.customer_email;
@@ -147,6 +175,67 @@ Deno.serve(async (req) => {
             booking_id: bookingId,
             barber_id: barberIdMeta,
           }).catch((e) => console.warn('[webhook] forwardBooking failed:', e.message));
+        }
+        break;
+      }
+
+      // ── SUBSCRIPTION EVENTS ──────────────────────────────────────────────
+
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const customerId = sub.customer;
+        const subStatus = sub.status; // active, trialing, past_due, canceled, etc.
+        const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
+
+        // Derive plan from price/product metadata or amount
+        // Price IDs map: look at the subscription items
+        const priceId = sub.items?.data?.[0]?.price?.id || '';
+        const unitAmount = sub.items?.data?.[0]?.price?.unit_amount || 0;
+        let plan = 'starter';
+        if (unitAmount === 9900) plan = 'spotlight';
+        else if (unitAmount === 5900) plan = 'pro';
+        else if (unitAmount === 2900) plan = 'growth';
+
+        // Also check metadata if set
+        const metaPlan = sub.metadata?.plan || sub.items?.data?.[0]?.price?.metadata?.plan;
+        if (metaPlan && ['growth','pro','spotlight'].includes(metaPlan)) plan = metaPlan;
+
+        const barbers = await base44.asServiceRole.entities.Barber.filter({ stripe_customer_id: customerId });
+        if (barbers.length > 0) {
+          await base44.asServiceRole.entities.Barber.update(barbers[0].id, {
+            plan,
+            subscription_status: subStatus,
+            stripe_subscription_id: sub.id,
+            current_period_end: periodEnd,
+          });
+          console.log(`[webhook] ${event.type}: barber ${barbers[0].id} → plan=${plan} status=${subStatus}`);
+          eventNotes = `barber ${barbers[0].id} plan=${plan} status=${subStatus}`;
+        } else {
+          // Try to find barber by customer email from Stripe
+          console.warn(`[webhook] ${event.type}: no barber for stripe_customer_id=${customerId}`);
+          eventStatus = 'ignored';
+          eventNotes = `no barber for customer ${customerId}`;
+        }
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object;
+        const customerId = sub.customer;
+        const barbers = await base44.asServiceRole.entities.Barber.filter({ stripe_customer_id: customerId });
+        if (barbers.length > 0) {
+          await base44.asServiceRole.entities.Barber.update(barbers[0].id, {
+            plan: 'starter',
+            subscription_status: 'canceled',
+            stripe_subscription_id: null,
+            current_period_end: null,
+          });
+          console.log(`[webhook] customer.subscription.deleted: barber ${barbers[0].id} → starter`);
+          eventNotes = `barber ${barbers[0].id} → starter (canceled)`;
+        } else {
+          eventStatus = 'ignored';
+          eventNotes = `no barber for customer ${customerId}`;
         }
         break;
       }
@@ -378,14 +467,44 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case 'invoice.payment_succeeded': {
+        // Connected-account alias — treat same as invoice.paid
+        const invoice = event.data.object;
+        const stripeInvoiceId = invoice.id;
+        const dbInvoices2 = await base44.asServiceRole.entities.StripeInvoice.filter({ stripe_invoice_id: stripeInvoiceId });
+        if (dbInvoices2.length > 0) {
+          await base44.asServiceRole.entities.StripeInvoice.update(dbInvoices2[0].id, {
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+          });
+          eventNotes = `invoice ${stripeInvoiceId} marked paid (payment_succeeded)`;
+        } else {
+          eventStatus = 'ignored';
+          eventNotes = `no local record for invoice ${stripeInvoiceId}`;
+        }
+        break;
+      }
+
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        console.warn(`[webhook] invoice.payment_failed: id=${invoice.id}`);
+        console.warn(`[webhook] invoice.payment_failed: id=${invoice.id} subscription=${invoice.subscription}`);
+        // Mark subscription past_due if it's a subscription invoice
+        if (invoice.subscription) {
+          const custId = invoice.customer;
+          const pdBarbers = await base44.asServiceRole.entities.Barber.filter({ stripe_customer_id: custId });
+          if (pdBarbers.length > 0) {
+            await base44.asServiceRole.entities.Barber.update(pdBarbers[0].id, {
+              subscription_status: 'past_due',
+            });
+            eventNotes = `barber ${pdBarbers[0].id} → past_due`;
+          }
+        }
+        // Also mark StripeInvoice if it's a barber-to-client invoice
         const failedInvoices = await base44.asServiceRole.entities.StripeInvoice.filter({ stripe_invoice_id: invoice.id });
         if (failedInvoices.length > 0) {
           await base44.asServiceRole.entities.StripeInvoice.update(failedInvoices[0].id, { status: 'open' }).catch(() => {});
         }
-        eventNotes = `invoice_id=${invoice.id}`;
+        eventNotes = (eventNotes || '') + ` invoice_id=${invoice.id}`;
         break;
       }
 

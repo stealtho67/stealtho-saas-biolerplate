@@ -39,7 +39,7 @@ const PLANS = [
     badge: null,
     cta: "Subscribe",
     ctaVariant: "outline",
-    href: "#",
+    href: "https://buy.stripe.com/dRmbIV5Q309vbrgfoE3gk02",
     isInternal: false,
     features: [
       "Everything in Starter",
@@ -61,7 +61,7 @@ const PLANS = [
     badge: null,
     cta: "Subscribe",
     ctaVariant: "outline",
-    href: "#",
+    href: "https://buy.stripe.com/7sYeV7guH2hDeDsdgw3gk01",
     isInternal: false,
     features: [
       "Everything in Growth",
@@ -83,7 +83,7 @@ const PLANS = [
     badge: "Most popular",
     cta: "Subscribe",
     ctaVariant: "default",
-    href: "#",
+    href: "https://buy.stripe.com/14AbIV3HVe0l3YO6S83gk00",
     isInternal: false,
     limit: "Limited to 10 barbers per city",
     features: [
