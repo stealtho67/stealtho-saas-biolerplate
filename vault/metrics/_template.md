@@ -1,8 +1,8 @@
 ---
 created: 2026-06-01
+updated: 2026-06-02
 status: active
 tags: [template, metrics]
-aliases: [Metrics Template]
 ---
 
 # Metrics Template
