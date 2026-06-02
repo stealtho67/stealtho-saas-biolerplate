@@ -44,6 +44,11 @@ Situations available:
 import os, sys, json, csv, time, argparse
 from datetime import datetime
 
+# ─── Leads Database ──────────────────────────────────────────────────────────
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from leads_db import LeadsDB
+leads_db = LeadsDB()
+
 # ─── Gemini SDK ──────────────────────────────────────────────────────────────
 from google import genai
 from google.genai import types
@@ -84,14 +89,41 @@ def call_gemini(prompt, use_search=True, max_retries=3):
 
 
 def parse_json(text):
-    """Extract JSON from Gemini response (it loves markdown fences)."""
+    """Extract JSON from Gemini response (it loves markdown fences and extra text)."""
     text = text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[-1]
-        text = text.rsplit("```", 1)[0]
-    if text.startswith("json"):
-        text = text[4:].strip()
-    return json.loads(text)
+    # Try to find a JSON array or object between backtick fences
+    if "```" in text:
+        # Extract content from the first code block
+        parts = text.split("```")
+        for part in parts:
+            part = part.strip()
+            if part.startswith("json"):
+                part = part[4:].strip()
+            if part.startswith("[") or part.startswith("{"):
+                try:
+                    return json.loads(part)
+                except json.JSONDecodeError:
+                    continue
+    # Try direct parse
+    if text.startswith("[") or text.startswith("{"):
+        return json.loads(text)
+    # Try to find JSON by scanning for [ or { 
+    for start_char, end_char in [("[", "]"), ("{", "}")]:
+        start = text.find(start_char)
+        if start >= 0:
+            # Find matching end
+            depth = 0
+            for i in range(start, len(text)):
+                if text[i] == start_char:
+                    depth += 1
+                elif text[i] == end_char:
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            return json.loads(text[start:i+1])
+                        except json.JSONDecodeError:
+                            continue
+    raise json.JSONDecodeError("No JSON found in response", text, 0)
 
 
 # ─── COMMANDS ────────────────────────────────────────────────────────────────
@@ -495,6 +527,11 @@ Leads:
                 ])
         print(f"💾 Saved to {output}\n")
 
+    # Store in database (auto-deduplicates)
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    new_count = leads_db.store_leads(scored, niche=biz_type, city=city, situation=situation_key, run_id=run_id)
+    print(f"📀 Database: {new_count} new leads stored (deduplicated from {len(scored)} found)\n")
+
     # Summary
     high = sum(1 for l in scored if l.get('priority') == 'high')
     no_site = sum(1 for l in scored if not l.get('has_website'))
@@ -651,6 +688,11 @@ Leads: {json.dumps(verified, indent=2)}"""
                     lead.get('pitch_angle', ''),
                 ])
         print(f"💾 Saved to {output}\n")
+    
+    # Store in database (auto-deduplicates)
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    new_count = leads_db.store_leads(scored, niche=biz_type, city=city, run_id=run_id)
+    print(f"📀 Database: {new_count} new leads stored (deduplicated from {len(scored)} found)\n")
     
     # Summary
     high = sum(1 for l in scored if l.get('priority') == 'high')
