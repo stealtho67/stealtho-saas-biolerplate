@@ -93,3 +93,30 @@ Runs on: push to `main` / `scaffold-*` and all PRs to `main`.
 2. Add to Netlify dashboard (if needed)
 3. Add to CI workflow (if needed for build)
 4. Document in this file
+
+## Client Website Delivery (StealthO Local Presence)
+
+After a lead says yes, build their entire website in 30 seconds — **free** (Qwen3-Coder on OpenRouter):
+
+```bash
+cd /workspace/project/stealtho-saas-biolerplate
+python3 gemini-tool.py build-site \
+  --business "Their Business Name" \
+  --niche "plumber" \
+  --city "Austin" \
+  --output sites/their-business-name
+```
+
+**What you get:** 5-page site (Home, Services, About, Contact, Testimonials) + `pricing.json`
+- Single HTML file with embedded CSS/JS — no build step needed
+- Mobile-responsive, SEO meta tags, contact form, StealthO footer
+- ~39KB, production-ready
+
+**Deploy (5 min):**
+1. `cd sites/their-business-name`
+2. Drag `index.html` to [Netlify Drop](https://app.netlify.com/drop)
+3. Connect their domain
+4. Update their Google Business Profile with the new site link
+
+**Cost:** $0. Qwen3-Coder is free on OpenRouter with 1M token context.
+
