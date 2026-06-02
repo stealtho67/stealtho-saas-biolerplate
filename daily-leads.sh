@@ -66,17 +66,17 @@ echo "  Date:      $DATE"
 echo "=========================================="
 echo ""
 
-# Check for API key
-if [ -z "$GEMINI_API_KEY" ]; then
+# Check for API keys
+if [ -z "$GEMINI_API_KEY" ] || [ -z "$OPENROUTER_API_KEY" ]; then
   if [ -f "${SCRIPT_DIR}/.env" ]; then
     source "${SCRIPT_DIR}/.env"
   else
-    echo "ERROR: Set GEMINI_API_KEY or create .env file"
-    exit 1
+    echo "WARNING: No .env file found. Set GEMINI_API_KEY and OPENROUTER_API_KEY."
   fi
 fi
 
 export GEMINI_API_KEY
+export OPENROUTER_API_KEY
 
 # Run the pipeline with situation targeting
 python3 "${SCRIPT_DIR}/gemini-tool.py" pipeline \
