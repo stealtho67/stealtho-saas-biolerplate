@@ -1,0 +1,8 @@
+{
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": true,
+  "autoInternalLinkRegex": "\\[\\[([^\\|]+)(?:\\|([^\\]]+))?\\]\\]",
+  "showUnsupportedFiles": true,
+  "strictLineBreaks": false
+}

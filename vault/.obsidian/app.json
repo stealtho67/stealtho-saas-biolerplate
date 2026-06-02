@@ -1,0 +1,21 @@
+{
+  "obsidianVersion": "1.8.0",
+  "attachmentFolderPath": "./assets",
+  "newFileLocation": "current",
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": true,
+  "showUnsupportedFiles": true,
+  "showLineNumber": true,
+  "spellcheck": true,
+  "tabSize": 2,
+  "communityPluginSortOrder": "download",
+  "promptForDelete": false,
+  "trashOption": "local",
+  "rightToLeft": false,
+  "readableLineLength": true,
+  "strictLineBreaks": false,
+  "showFrontmatter": true,
+  "showIndentGuide": true,
+  "showInlineTitle": true
+}
