@@ -1,0 +1,90 @@
+{
+  "name": "StripeInvoice",
+  "type": "object",
+  "properties": {
+    "barber_id": {
+      "type": "string",
+      "description": "ID of the barber who created the invoice"
+    },
+    "booking_id": {
+      "type": "string",
+      "description": "Associated booking ID (if any)"
+    },
+    "stripe_invoice_id": {
+      "type": "string",
+      "description": "Stripe invoice ID (in_xxx)"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID on the connected account"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "client_email": {
+      "type": "string"
+    },
+    "service_name": {
+      "type": "string"
+    },
+    "service_price": {
+      "type": "number",
+      "description": "Service price in dollars"
+    },
+    "tip_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "platform_fee": {
+      "type": "number",
+      "description": "NextCut application fee in dollars"
+    },
+    "barber_earnings": {
+      "type": "number",
+      "description": "service_price - platform_fee + tip"
+    },
+    "commission_type": {
+      "type": "string",
+      "enum": [
+        "new_nextcut_lead",
+        "repeat_client",
+        "barber_direct_client",
+        "barber_referral_link"
+      ]
+    },
+    "commission_rate": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "open",
+        "paid",
+        "uncollectible",
+        "void"
+      ],
+      "default": "open"
+    },
+    "invoice_url": {
+      "type": "string",
+      "description": "Stripe-hosted invoice URL the client can pay at"
+    },
+    "invoice_pdf": {
+      "type": "string",
+      "description": "PDF download URL"
+    },
+    "note": {
+      "type": "string"
+    },
+    "paid_at": {
+      "type": "string",
+      "description": "ISO timestamp when marked paid"
+    }
+  },
+  "required": [
+    "barber_id",
+    "client_email",
+    "service_price"
+  ]
+}

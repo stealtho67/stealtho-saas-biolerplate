@@ -1,0 +1,49 @@
+{
+  "name": "Service",
+  "type": "object",
+  "properties": {
+    "barber_id": {
+      "type": "string",
+      "description": "ID of the barber offering this service"
+    },
+    "service_name": {
+      "type": "string",
+      "description": "Name of the service"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the service"
+    },
+    "price": {
+      "type": "number",
+      "description": "Price in dollars"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Duration in minutes"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "haircut",
+        "beard",
+        "combo",
+        "styling",
+        "color",
+        "other"
+      ],
+      "description": "Service category"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the service is active and visible to clients"
+    }
+  },
+  "required": [
+    "barber_id",
+    "service_name",
+    "price",
+    "duration_minutes"
+  ]
+}

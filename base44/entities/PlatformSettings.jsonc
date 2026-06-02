@@ -1,0 +1,21 @@
+{
+  "name": "PlatformSettings",
+  "type": "object",
+  "properties": {
+    "setting_key": {
+      "type": "string",
+      "description": "Unique key e.g. commission_rate"
+    },
+    "setting_value": {
+      "type": "string",
+      "description": "Value stored as string \u2014 parse as needed"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "setting_key",
+    "setting_value"
+  ]
+}

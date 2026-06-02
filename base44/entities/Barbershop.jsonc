@@ -1,0 +1,88 @@
+{
+  "name": "Barbershop",
+  "type": "object",
+  "properties": {
+    "shop_name": {
+      "type": "string",
+      "description": "Public name of the barbershop"
+    },
+    "shop_slug": {
+      "type": "string",
+      "description": "URL-friendly identifier, e.g. kings-cuts"
+    },
+    "shop_logo": {
+      "type": "string",
+      "description": "URL to shop logo image"
+    },
+    "shop_banner": {
+      "type": "string",
+      "description": "URL to shop banner/hero image"
+    },
+    "description": {
+      "type": "string",
+      "description": "Public bio / about the shop"
+    },
+    "city": {
+      "type": "string",
+      "description": "City where the shop is located"
+    },
+    "neighborhood": {
+      "type": "string",
+      "description": "Neighborhood or area"
+    },
+    "address": {
+      "type": "string",
+      "description": "Full street address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "email": {
+      "type": "string",
+      "description": "Contact email for the shop"
+    },
+    "website": {
+      "type": "string",
+      "description": "External website URL"
+    },
+    "instagram": {
+      "type": "string",
+      "description": "Instagram handle or URL"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "suspended"
+      ],
+      "default": "pending",
+      "description": "Admin-controlled visibility status"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email of the owner/manager user account"
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this shop is featured on the homepage"
+    },
+    "amenities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "e.g. WiFi, Parking, Walk-ins Welcome"
+    },
+    "working_hours": {
+      "type": "object",
+      "description": "Opening hours per day"
+    }
+  },
+  "required": [
+    "shop_name",
+    "city"
+  ]
+}

@@ -1,0 +1,198 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-heading: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+
+    /* ── NextCut Dark Teal Design System ── */
+    --background: 196 40% 6%;          /* #070F12 deep dark teal-navy */
+    --foreground: 190 20% 94%;         /* #EEF6F7 off-white */
+    --card: 196 38% 10%;               /* #0E1C21 card surface */
+    --card-foreground: 190 20% 94%;
+    --popover: 196 38% 10%;
+    --popover-foreground: 190 20% 94%;
+    --primary: 178 100% 40%;           /* #00CCCC bright teal accent */
+    --primary-foreground: 196 40% 5%;  /* very dark for contrast on bright teal */
+    --secondary: 196 35% 14%;          /* #162028 */
+    --secondary-foreground: 190 20% 85%;
+    --muted: 196 35% 14%;
+    --muted-foreground: 190 15% 55%;   /* #6FA3A8 muted teal-grey */
+    --accent: 196 38% 16%;             /* #1A2B32 slightly lighter surface */
+    --accent-foreground: 190 20% 94%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 196 30% 16%;             /* #1C2F36 subtle border */
+    --input: 196 30% 16%;
+    --ring: 178 100% 40%;
+    --success: 160 84% 39%;
+    --warning: 38 92% 50%;
+    --chart-1: 178 100% 40%;
+    --chart-2: 160 84% 39%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 210 40% 50%;
+    --chart-5: 280 65% 60%;
+    --radius: 0.75rem;
+    --sidebar-background: 196 42% 7%;
+    --sidebar-foreground: 190 20% 88%;
+    --sidebar-primary: 178 100% 40%;
+    --sidebar-primary-foreground: 196 40% 5%;
+    --sidebar-accent: 196 38% 12%;
+    --sidebar-accent-foreground: 190 20% 88%;
+    --sidebar-border: 196 30% 14%;
+    --sidebar-ring: 178 100% 40%;
+  }
+
+  /* Light mode override */
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 196 40% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 196 40% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 196 40% 8%;
+    --primary: 178 90% 35%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 190 20% 94%;
+    --secondary-foreground: 196 40% 10%;
+    --muted: 190 20% 94%;
+    --muted-foreground: 190 15% 45%;
+    --accent: 190 20% 94%;
+    --accent-foreground: 196 40% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 190 20% 88%;
+    --input: 190 20% 88%;
+    --ring: 178 90% 35%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+    overscroll-behavior-y: none;
+  }
+
+  button, a, [role="tab"], [role="button"] {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+}
+
+/* Skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--secondary)) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Teal glow utility */
+.glow-teal {
+  box-shadow: 0 0 24px 0 hsl(178 100% 40% / 0.25);
+}
+
+/* ── Micro-interactions ── */
+
+/* Buttons: lift + scale + teal glow on hover, dip on press */
+button:not([data-no-lift]),
+[role="button"]:not([data-no-lift]) {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+button:not([data-no-lift]):hover,
+[role="button"]:not([data-no-lift]):hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 18px 0 hsl(178 100% 40% / 0.22);
+}
+button:not([data-no-lift]):active,
+[role="button"]:not([data-no-lift]):active {
+  transform: translateY(0px) scale(0.98);
+  box-shadow: none;
+  transition-duration: 0.08s;
+}
+/* Disable lift for icon-only / ghost / tab triggers where it looks wrong */
+button[data-no-lift],
+[role="tab"] {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Cards: hover raise + teal border highlight */
+.card-interactive {
+  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, border-color 0.18s ease-out;
+  border: 1px solid hsl(var(--border));
+}
+.card-interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px 0 hsl(178 100% 40% / 0.12), 0 2px 8px 0 hsl(0 0% 0% / 0.3);
+  border-color: hsl(178 100% 40% / 0.4);
+}
+
+/* Inputs / Textareas: teal focus glow */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select {
+  transition: border-color 0.16s ease-out, box-shadow 0.16s ease-out;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+textarea:focus,
+select:focus {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: 0 0 0 3px hsl(178 100% 40% / 0.15) !important;
+  outline: none !important;
+}
+
+/* Nav link underline from left */
+.nav-link-underline {
+  position: relative;
+}
+.nav-link-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: hsl(var(--primary));
+  border-radius: 1px;
+  transition: width 0.2s ease-out;
+}
+.nav-link-underline:hover::after,
+.nav-link-underline[data-active="true"]::after {
+  width: 100%;
+}
+
+/* Reduced motion — disable everything above */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  button:not([data-no-lift]):hover,
+  [role="button"]:not([data-no-lift]):hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .card-interactive:hover {
+    transform: none;
+  }
+}

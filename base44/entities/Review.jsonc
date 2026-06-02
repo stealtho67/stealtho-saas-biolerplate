@@ -1,0 +1,35 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "Email of the reviewing client"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Name of the client"
+    },
+    "barber_id": {
+      "type": "string",
+      "description": "ID of the barber being reviewed"
+    },
+    "booking_id": {
+      "type": "string",
+      "description": "ID of the related booking"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Rating from 1-5"
+    },
+    "comment": {
+      "type": "string",
+      "description": "Review text"
+    }
+  },
+  "required": [
+    "client_email",
+    "barber_id",
+    "rating"
+  ]
+}

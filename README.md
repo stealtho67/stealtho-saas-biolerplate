@@ -1,37 +1,25 @@
-# StealthO SaaS Boilerplate
+# NextCut — Barber Booking Marketplace
 
-Reusable SaaS factory: Base44 frontend export → Supabase (Auth / Postgres / RLS) + Stripe (subscriptions) + Netlify (serverless).
+Built with **Base44** + **Supabase** + **Stripe**.
 
-## Stack
+This is the single source of truth for NextCut. Push changes here and they sync to your Base44 builder.
 
-| Layer        | Technology                              |
-| ------------ | --------------------------------------- |
-| Frontend     | React 19 + Vite + React Router v7       |
-| Backend      | Netlify Functions (serverless Node 22)  |
-| Database     | Supabase (PostgreSQL + Row Level Security) |
-| Auth         | Supabase Auth                           |
-| Payments     | Stripe (subscriptions, test mode)       |
-| Infra        | Netlify (hosting + functions)           |
+---
 
-## Getting Started
-
-### 1. Clone & install
+## Quick start
 
 ```bash
-git clone <repo-url> stealtho-saas
-cd stealtho-saas
 npm install
+npm run dev
 ```
 
-### 2. Environment variables
+### Environment
 
-Copy `.env.example` to `.env` and fill in your values:
+Copy `.env.example` to `.env` and fill in your keys:
 
 ```bash
 cp .env.example .env
 ```
-
-Required secrets:
 
 | Variable                       | Source                        |
 | ------------------------------ | ----------------------------- |
@@ -41,81 +29,62 @@ Required secrets:
 | `VITE_STRIPE_PUBLISHABLE_KEY`  | Stripe API Keys → Publishable |
 | `STRIPE_SECRET_KEY`            | Stripe API Keys → Secret      |
 | `STRIPE_WEBHOOK_SECRET`        | Stripe Webhooks → signing secret |
-| `NEXTCUT_PRO_PROD_ID`          | Stripe Products → Pro         |
-| `NEXTCUT_GROWTH_PROD_ID`       | Stripe Products → Growth      |
-| `NEXTCUT_SPOTLIGHT_PROD_ID`    | Stripe Products → Spotlight   |
+| `NEXTCUT_PRO_PRICE_ID`         | Stripe Products → NextCut Pro |
+| `NEXTCUT_GROWTH_PRICE_ID`      | Stripe Products → NextCut Growth |
+| `NEXTCUT_SPOTLIGHT_PRICE_ID`   | Stripe Products → NextCut Spotlight |
+| `VITE_BASE44_APP_ID`           | Base44 App Settings           |
+| `VITE_BASE44_APP_BASE_URL`     | Base44 App Settings           |
 
 > **Never commit `.env` to version control.**
 
-### 3. Database
+### Database
 
-Run the migration in your Supabase SQL editor:
+Run the migration in Supabase SQL Editor:
 
 ```
 supabase/migrations/0001_init.sql
 ```
 
-This creates:
-- `public.profiles` table (extends `auth.users`)
-- `public.subscriptions` table (syncs from Stripe)
-- Trigger to auto-create a profile on signup
-- Row Level Security policies
+Creates: `profiles`, `subscriptions`, `processed_events` tables + RLS policies + auth trigger.
 
-### 4. Stripe webhook
+---
 
-Start the Stripe CLI to forward events to your local functions:
+## Pushing changes
 
-```bash
-stripe listen --forward-to http://localhost:8888/.netlify/functions/stripe-webhook
-```
+1. Commit and push to the `scaffold-stealtho-boilerplate` branch (or create a new one)
+2. Open a PR or merge to `main`
+3. Base44 picks up changes from the linked GitHub repo
 
-Then copy the signing secret (`whsec_...`) to your `.env` as `STRIPE_WEBHOOK_SECRET`.
+---
 
-### 5. Run locally
+## Architecture
 
-```bash
-npm run dev          # Vite dev server on :5173
-npx netlify dev      # Netlify dev server (functions on :8888)
-```
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React + Vite + Tailwind (Base44 export) |
+| Auth | Base44 SDK |
+| Database | Supabase (profiles, subscriptions, processed events) |
+| Payments | Stripe via Base44 (checkout, webhooks, connect) |
+| Backend logic | Base44 functions + Netlify functions (staged) |
 
-## Project Structure
+---
 
-```
-├── .openhands/
-│   ├── StealthO_Directives.md
-│   └── StealthO_Context.md
-├── src/
-│   ├── base44_export/        # Drop zone for Base44 frontend export
-│   ├── lib/
-│   │   ├── supabaseClient.js
-│   │   └── stripeClient.js
-│   └── ...                   # React app (Base44 export)
-├── netlify/
-│   └── functions/
-│       ├── create-checkout.js      # POST  /api/create-checkout
-│       ├── stripe-webhook.js       # POST  /api/stripe-webhook
-│       └── stripe-webhook.test.js  # Vitest tests
-├── supabase/
-│   └── migrations/
-│       └── 0001_init.sql
-├── package.json
-├── netlify.toml
-├── .env.example
-└── README.md
-```
+## Key files
 
-## Tests
+| File | Purpose |
+|------|---------|
+| `src/App.jsx` | Routes and app shell |
+| `src/lib/AuthContext.jsx` | Auth via Base44 SDK |
+| `src/lib/supabaseClient.js` | Supabase client for DB access |
+| `src/lib/stripeClient.js` | Stripe client helpers |
+| `supabase/migrations/0001_init.sql` | Database schema |
+| `netlify/functions/stripe-webhook.js` | Stripe webhook handler (staged) |
+| `netlify/functions/create-checkout.js` | Checkout session (staged) |
+| `.openhands/StealthO_Directives.md` | Engineering rules |
+| `.openhands/StealthO_Context.md` | Business model & directives |
 
-```bash
-npm test
-```
+---
 
-Runs Vitest on the serverless functions.
+## Importing new skills / additions
 
-## Manual Setup Checklist
-
-- [ ] Fill in `.env` with your production Supabase + Stripe keys
-- [ ] Run `supabase/migrations/0001_init.sql` in Supabase SQL editor
-- [ ] Set Stripe webhook secret (`STRIPE_WEBHOOK_SECRET`) from Stripe dashboard
-- [ ] Configure Stripe webhook endpoint to point at `/.netlify/functions/stripe-webhook`
-- [ ] Deploy via Netlify (CI/CD from GitHub)
+Add new features, components, or pages to the appropriate folder under `src/`, then push to this repo.

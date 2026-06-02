@@ -1,0 +1,138 @@
+{
+  "name": "Booking",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "barber_id": {
+      "type": "string"
+    },
+    "barber_name": {
+      "type": "string"
+    },
+    "service_id": {
+      "type": "string"
+    },
+    "service_name": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number",
+      "description": "Legacy price field \u2014 same as service_price"
+    },
+    "service_price": {
+      "type": "number",
+      "description": "Total service price charged to client (tips excluded)"
+    },
+    "tip_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Tip \u2014 goes 100% to barber, excluded from commission calculation"
+    },
+    "platform_fee": {
+      "type": "number",
+      "description": "Platform commission = service_price \u00d7 commission_rate"
+    },
+    "barber_earnings": {
+      "type": "number",
+      "description": "service_price - platform_fee + tip_amount"
+    },
+    "commission_rate": {
+      "type": "number",
+      "description": "Decimal rate applied at booking time e.g. 0.20, 0.15, 0.10"
+    },
+    "commission_type": {
+      "type": "string",
+      "enum": [
+        "new_nextcut_lead",
+        "repeat_client",
+        "barber_direct_client"
+      ],
+      "description": "How commission rate was determined"
+    },
+    "customer_source": {
+      "type": "string",
+      "enum": [
+        "marketplace",
+        "search",
+        "featured",
+        "nextcut_campaign",
+        "barber_referral_link",
+        "barber_direct_link",
+        "manual"
+      ],
+      "default": "marketplace",
+      "description": "How the client arrived"
+    },
+    "is_repeat_client": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if client has prior completed+paid booking with this barber"
+    },
+    "referred_by_barber_id": {
+      "type": "string",
+      "description": "Barber ID if client came via barber direct/referral link"
+    },
+    "date": {
+      "type": "string",
+      "description": "Date of booking (YYYY-MM-DD)"
+    },
+    "time": {
+      "type": "string",
+      "description": "Time of booking (HH:MM)"
+    },
+    "duration_minutes": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "completed",
+        "cancelled",
+        "no_show"
+      ],
+      "default": "confirmed"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "unpaid",
+        "paid",
+        "refunded"
+      ],
+      "default": "unpaid"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "in_person",
+        "stripe",
+        "other"
+      ]
+    },
+    "paid_at": {
+      "type": "string",
+      "description": "ISO timestamp of when payment was confirmed"
+    },
+    "stripe_payment_intent_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_email",
+    "barber_id",
+    "service_id",
+    "date",
+    "time",
+    "status"
+  ]
+}
