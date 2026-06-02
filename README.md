@@ -36,12 +36,14 @@ Required secrets:
 | Variable                       | Source                        |
 | ------------------------------ | ----------------------------- |
 | `VITE_SUPABASE_URL`            | Supabase project settings     |
-| `VITE_SUPABASE_ANON_KEY`       | Supabase API settings         |
-| `SUPABASE_SERVICE_ROLE_KEY`    | Supabase Service Role (secret)|
-| `VITE_STRIPE_PUBLISHABLE_KEY`  | Stripe Publishable Key (`pk_live_...`) |
-| `STRIPE_SECRET_KEY`            | Stripe Secret Key (`sk_live_...`)       |
-| `STRIPE_WEBHOOK_SECRET`        | Stripe webhook signing secret           |
-| `NEXT_PUBLIC_STRIPE_PRICE_ID`  | Stripe Price ID for your subscription   |
+| `VITE_SUPABASE_ANON_KEY`       | Supabase API → anon public    |
+| `SUPABASE_SERVICE_ROLE_KEY`    | Supabase API → service_role   |
+| `VITE_STRIPE_PUBLISHABLE_KEY`  | Stripe API Keys → Publishable |
+| `STRIPE_SECRET_KEY`            | Stripe API Keys → Secret      |
+| `STRIPE_WEBHOOK_SECRET`        | Stripe Webhooks → signing secret |
+| `NEXTCUT_PRO_PROD_ID`          | Stripe Products → Pro         |
+| `NEXTCUT_GROWTH_PROD_ID`       | Stripe Products → Growth      |
+| `NEXTCUT_SPOTLIGHT_PROD_ID`    | Stripe Products → Spotlight   |
 
 > **Never commit `.env` to version control.**
 
