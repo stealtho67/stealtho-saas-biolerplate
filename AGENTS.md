@@ -54,3 +54,32 @@ When Kendall gives a one-line idea:
 2. Run: VALIDATE → NAME/BRAND → SPEC → BUILD → MONETIZE → DEPLOY → GROW → MEASURE/COMPOUND
 3. Log every stage to `vault/cycles/`
 4. Return: verdict, brand, PR link, go-live checklist, content drop, single decision for Kendall
+
+## Gemini Lead Agent
+The system runs **automatically every weekday at 8 AM** via cron. Leads are stored persistently. No manual trigger needed.
+
+```bash
+# Check today's leads
+python3 status.py --today
+
+# Database stats (total, converted, by niche)
+python3 status.py --stats
+
+# Check follow-ups scheduled for today
+python3 status.py --followups
+
+# Full daily digest
+python3 status.py
+
+# Manually search a specific situation
+python3 gemini-tool.py situation --city "Austin" --type "cpa" --situation "home-based"
+
+# Mark a lead after calling
+python3 leads_db.py mark <lead_id> interested "Wants website"
+python3 leads_db.py mark <lead_id> converted "Signed Silver tier"
+```
+
+**Persistence:** `leads/leads.db` — SQLite, auto-dedup, never researches same biz twice.
+**Learning:** Tracks which niches/situations convert best. Run: `python3 leads_db.py learnings`
+**Daily rotation:** Different niche + situation each day (Mon-Fri).
+**Lead statuses:** new → called → interested → converted / not_interested

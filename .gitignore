@@ -26,3 +26,5 @@ npm-debug.log*
 # Vitest
 coverage/
 leads/
+*.pyc
+__pycache__/
