@@ -28,3 +28,4 @@ coverage/
 leads/
 *.pyc
 __pycache__/
+sites/

@@ -49,32 +49,102 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from leads_db import LeadsDB
 leads_db = LeadsDB()
 
-# ─── Gemini SDK ──────────────────────────────────────────────────────────────
-from google import genai
-from google.genai import types
+# ─── OpenRouter Agent (Primary) ─────────────────────────────────────────────
+from openrouter_agent import OpenRouterAgent, TASK_ROUTES
+or_agent = OpenRouterAgent()
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    print("ERROR: Set GEMINI_API_KEY environment variable")
-    sys.exit(1)
+# ─── Gemini SDK (Optional — only for web search grounding) ──────────────────
+_gemini_client = None
+_gemini_available = False
 
-client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL = "gemini-2.5-flash"  # Fast + cheap for research with search grounding
+def _init_gemini():
+    global _gemini_client, _gemini_available
+    if _gemini_client is not None:
+        return _gemini_available
+    
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        _gemini_available = False
+        return False
+    
+    try:
+        from google import genai
+        from google.genai import types
+        _gemini_client = genai.Client(api_key=api_key)
+        _gemini_available = True
+        return True
+    except Exception:
+        _gemini_available = False
+        return False
 
-# ─── HELPERS ─────────────────────────────────────────────────────────────────
+PROVIDER = os.environ.get("LLM_PROVIDER", "openrouter").lower()
 
-def call_gemini(prompt, use_search=True, max_retries=3):
-    """Call Gemini with retry logic and optional Google Search grounding."""
-    config = types.GenerateContentConfig(
-        temperature=0.2,
+# ─── UNIFIED LLM CALL ────────────────────────────────────────────────────────
+
+def call_llm(prompt, task="general", provider=None, model=None, use_search=False,
+             temperature=0.2, max_tokens=4096, timeout=60, system_prompt=None):
+    """
+    Unified LLM call. Auto-routes to the best model.
+    
+    Args:
+        prompt: The user prompt
+        task: Task type for routing (research, scoring, analysis, code, content, general)
+        provider: Force a specific provider (openrouter/gemini/gemini-search)
+        model: Force a specific model (bypasses routing)
+        use_search: If True, use Gemini with web search grounding
+        temperature: 0-1
+        max_tokens: Max response tokens
+        timeout: Timeout in seconds
+        system_prompt: Optional system message
+    """
+    # Force Gemini if search grounding is needed (Gemini-only feature)
+    if use_search or provider == "gemini-search":
+        if not _init_gemini():
+            return "ERROR: GEMINI_API_KEY not set. Search grounding is Gemini-only. Google search needs a real API key."
+        return _call_gemini(prompt, use_search=True, max_retries=3, temperature=temperature)
+    
+    # Force Gemini (non-search)
+    if provider == "gemini":
+        if not _init_gemini():
+            return "ERROR: GEMINI_API_KEY not set."
+        return _call_gemini(prompt, use_search=False, max_retries=3, temperature=temperature)
+    
+    # Default: OpenRouter with auto-routing
+    result = or_agent.run(
+        prompt=prompt,
+        task=task,
+        model=model,
+        fallback_depth=3,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        timeout=timeout,
+        system_prompt=system_prompt,
     )
+    
+    if "error" in result and result["error"]:
+        # Fallback to Gemini if OpenRouter fails and Gemini is available
+        if _init_gemini():
+            return _call_gemini(prompt, use_search=False, max_retries=2, temperature=temperature)
+        return result["content"]
+    
+    return result["content"]
+
+
+def _call_gemini(prompt, use_search=True, max_retries=3, temperature=0.2):
+    """Internal Gemini call with retry logic."""
+    if not _init_gemini():
+        return "ERROR: Gemini not initialized"
+    
+    from google.genai import types
+    
+    config = types.GenerateContentConfig(temperature=temperature)
     if use_search:
         config.tools = [types.Tool(google_search=types.GoogleSearch())]
-
+    
     for attempt in range(max_retries):
         try:
-            response = client.models.generate_content(
-                model=MODEL,
+            response = _gemini_client.models.generate_content(
+                model="gemini-2.5-flash",
                 contents=prompt,
                 config=config,
             )
@@ -148,7 +218,7 @@ Only return real businesses you can verify exist.
 
 Return ONLY valid JSON, no other text."""
     
-    result = call_gemini(prompt, use_search=True)
+    result = call_llm(prompt, task="research", use_search=True)
     
     try:
         data = parse_json(result)
@@ -194,7 +264,7 @@ Return a JSON object with these fields:
 
 Use Google Search to verify everything. Return ONLY valid JSON."""
     
-    result = call_gemini(prompt, use_search=True)
+    result = call_llm(prompt, task="research", use_search=True)
     
     try:
         data = parse_json(result)
@@ -256,7 +326,7 @@ Leads to score:
 
 Return ONLY valid JSON array."""
     
-    result = call_gemini(prompt, use_search=False)
+    result = call_llm(prompt, task="scoring", use_search=False)
     
     try:
         data = parse_json(result)
@@ -311,7 +381,7 @@ Return JSON:
     prompt = templates.get(task, task)
     print(f"\n✍️ Generating {task} for {business}...\n")
     
-    result = call_gemini(prompt, use_search=False)
+    result = call_llm(prompt, task="content", use_search=False)
     
     try:
         data = parse_json(result)
@@ -392,7 +462,7 @@ For EACH business, return a JSON object with:
 
 Return ONLY a valid JSON array. Only include real businesses you can verify."""
 
-    result = call_gemini(prompt, use_search=True)
+    result = call_llm(prompt, task="research", use_search=True)
     try:
         leads = parse_json(result)
     except json.JSONDecodeError:
@@ -439,7 +509,7 @@ Return a JSON array where each object has:
 - summary: one-line assessment
 - call_angle: one-sentence pitch specific to this business's situation"""
 
-        v_result = call_gemini(v_prompt, use_search=True)
+        v_result = call_llm(v_prompt, task="research", use_search=True)
         try:
             v_data = parse_json(v_result)
             for v in v_data:
@@ -474,7 +544,7 @@ Return JSON array sorted by score descending: [{{"name", "score", "priority": "h
 Leads:
 {json.dumps(verified, indent=2)}"""
 
-    s_result = call_gemini(score_prompt, use_search=False)
+    s_result = call_llm(score_prompt, task="scoring", use_search=False)
     try:
         scored = parse_json(s_result)
         scored.sort(key=lambda x: x.get('score', 0), reverse=True)
@@ -576,7 +646,7 @@ For each business, return:
 Return ONLY a JSON array. Only include real businesses you can verify."""
     
     
-    result = call_gemini(prompt, use_search=True)
+    result = call_llm(prompt, task="research", use_search=True)
     try:
         leads = parse_json(result)
     except json.JSONDecodeError:
@@ -616,7 +686,7 @@ Return ONLY a JSON array where each object has:
 - has_google_business_profile: true or false
 - summary: one-line assessment"""
         
-        v_result = call_gemini(v_prompt, use_search=True)
+        v_result = call_llm(v_prompt, task="research", use_search=True)
         try:
             v_data = parse_json(v_result)
             # Merge verification data back into leads
@@ -643,7 +713,7 @@ Return ONLY a JSON array where each object has:
 
 Leads: {json.dumps(verified, indent=2)}"""
     
-    s_result = call_gemini(score_prompt, use_search=False)
+    s_result = call_llm(score_prompt, task="scoring", use_search=False)
     try:
         scored = parse_json(s_result)
         scored.sort(key=lambda x: x.get('score', 0), reverse=True)
@@ -705,12 +775,146 @@ Leads: {json.dumps(verified, indent=2)}"""
     return scored
 
 
+def cmd_build_site(business, niche, city=None, output=None):
+    """Build a 5-page business website using Qwen3-Coder."""
+    location = f"in {city}" if city else ""
+    site_name = business.lower().replace(" ", "-").replace("&", "and").replace("'", "")
+    output_dir = output or f"sites/{site_name}"
+    
+    print(f"\n{'='*60}")
+    print(f"  BUILDING WEBSITE FOR: {business}")
+    print(f"  Niche: {niche} {location}")
+    print(f"{'='*60}\n")
+    
+    prompt = f"""Build a complete, production-ready 5-page website for {business}, a {niche} business {location}.
+
+The website should be a SINGLE HTML FILE (embedded CSS + JS). Modern, clean, professional design.
+Make it look like a real business website — NOT like an AI template.
+
+PAGES (all in one HTML file, shown/hidden via JS navigation):
+1. **Home** — Hero section with business name, tagline, CTA button ("Get a Free Quote"), services overview
+2. **Services** — Detailed list of services with descriptions and pricing tiers
+3. **About** — About the business, years of experience, mission, team
+4. **Contact** — Contact form (name, email, phone, message), phone number, business hours, location
+5. **Testimonials** — Google review-style testimonials with 5-star ratings
+
+REQUIREMENTS:
+- Mobile-responsive (looks great on phones)
+- Fast loading (no external dependencies except Google Fonts)
+- Color scheme: professional and appropriate for a {niche}
+- Include a footer with business name and "Powered by StealthO"
+- Use modern CSS (flexbox/grid, smooth scrolling, hover effects)
+- Include a working contact form (POST to /contact or mailto)
+- SEO-friendly meta tags
+- Font Awesome for icons (CDN link)
+
+Return the COMPLETE HTML file. Not a snippet. Not partial code. The FULL file.
+Wrap it in ```html ... ``` tags."""
+
+    print(f"📡 Generating website with Qwen3-Coder (1M context, coding-optimized)...\n")
+    
+    result = call_llm(
+        prompt=prompt,
+        task="website",
+        model="qwen/qwen3-coder:free",
+        temperature=0.3,
+        max_tokens=8192,
+        timeout=120,
+    )
+    
+    # Extract HTML from response
+    html = result
+    if "```html" in result:
+        html = result.split("```html")[1]
+        if "```" in html:
+            html = html.rsplit("```", 1)[0]
+    elif "```" in result:
+        html = result.split("```")[1]
+        if "```" in html:
+            html = html.rsplit("```", 1)[0]
+    
+    html = html.strip()
+    
+    if not html.startswith("<!DOCTYPE") and not html.startswith("<html") and not html.startswith("<!doctype"):
+        html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{business} | {niche.title()}</title>
+</head>
+<body>
+{html}
+</body>
+</html>"""
+    
+    # Save the website
+    os.makedirs(output_dir, exist_ok=True)
+    filepath = os.path.join(output_dir, "index.html")
+    
+    with open(filepath, "w") as f:
+        f.write(html)
+    
+    file_size = len(html)
+    page_count = html.count("<section") + html.count('class="page"') + html.count('id="page-') 
+    page_count = max(page_count, 5)  # At least 5 pages
+    
+    print(f"✅ Website built!")
+    print(f"   File: {filepath}")
+    print(f"   Size: {file_size:,} bytes")
+    print(f"   Pages: {page_count}+")
+    print(f"\n   Open in browser: file://{os.path.abspath(filepath)}\n")
+    
+    # Generate a pricing sheet alongside
+    pricing_prompt = f"""Create a pricing sheet for {business}, a {niche} business {location}.
+Return a JSON array of services with:
+- service: service name
+- description: one-line description
+- price_range: "$XX - $XX" or "Contact for quote"
+- popular: true/false (mark the most popular one)
+
+Return ONLY valid JSON array."""
+    
+    print("📡 Generating pricing sheet...")
+    pricing_result = call_llm(pricing_prompt, task="content", use_search=False)
+    
+    pricing_path = os.path.join(output_dir, "pricing.json")
+    try:
+        pricing = parse_json(pricing_result)
+        with open(pricing_path, "w") as f:
+            json.dump(pricing, f, indent=2)
+        print(f"   Pricing: {pricing_path}")
+        for p in pricing[:4]:
+            star = "⭐" if p.get('popular') else "  "
+            print(f"     {star} {p.get('service', '?')}: {p.get('price_range', '?')}")
+    except Exception:
+        pass
+    
+    print(f"\n📋 NEXT STEPS:")
+    print(f"   1. Open {filepath} and review")
+    print(f"   2. Replace placeholder images/content with real business info")
+    print(f"   3. Deploy to hosting (Netlify, Vercel, or GitHub Pages)")
+    print(f"   4. Connect domain and set up Google Business Profile link\n")
+    
+    return filepath
+
+
 # ─── CLI ─────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(description="StealthO Gemini Agent")
     sub = parser.add_subparsers(dest="command")
     
+    # help enhancements
+    parser.epilog = """EXAMPLES:
+  python gemini-tool.py pipeline --city "Austin" --type "plumbers"
+  python gemini-tool.py verify --business "Ace Plumbing" --city "Austin"
+  python gemini-tool.py situation --city "Austin" --type "cpa" --situation "home-based"
+  python gemini-tool.py build-site --business "Elite Plumbing" --niche "plumber" --city "Austin"
+  python gemini-tool.py content --task weekly-posts --business "Austin Barbershop"
+  python gemini-tool.py score --file leads.csv
+  python status.py --today
+"""
     # leads
     p_leads = sub.add_parser("leads", help="Find leads in a city")
     p_leads.add_argument("--city", required=True)
@@ -732,6 +936,13 @@ def main():
     p_content.add_argument("--business", required=True)
     p_content.add_argument("--city")
     p_content.add_argument("--count", type=int, default=4)
+    
+    # build-site
+    p_build = sub.add_parser("build-site", help="Build a 5-page business website from a prompt")
+    p_build.add_argument("--business", required=True, help="Business name")
+    p_build.add_argument("--niche", required=True, help="Type of business (plumber, barber, dentist, etc)")
+    p_build.add_argument("--city", help="Location")
+    p_build.add_argument("--output", default=None, help="Output directory for the website files")
     
     # pipeline
     p_pipe = sub.add_parser("pipeline", help="Full research -> verify -> score pipeline")
@@ -776,6 +987,8 @@ def main():
             print("Provide --file or --json")
     elif args.command == "content":
         cmd_content(args.task, args.business, args.city, args.count)
+    elif args.command == "build-site":
+        cmd_build_site(args.business, args.niche, args.city, args.output)
     elif args.command == "pipeline":
         cmd_pipeline(args.city, args.type, args.output, args.situation)
     elif args.command == "situation":
