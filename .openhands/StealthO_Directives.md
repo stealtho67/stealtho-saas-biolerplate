@@ -18,9 +18,10 @@
 - All secrets read from `process.env` at runtime.
 - `.env.example` documents every required variable with a safe dummy.
 
-## Stripe TEST Keys
-- All Stripe API calls in code must use test-mode keys (`sk_test_...`, `pk_test_...`).
-- The production key must never appear in any file committed to this repository.
+## Stripe Keys
+- All Stripe API keys go in environment variables only — never committed to the repo.
+- Use `sk_live_` / `pk_live_` for production, `sk_test_` / `pk_test_` for development.
+- `.env.example` documents every required variable with a safe placeholder.
 
 ## NEVER Push to Main or Deploy
 - All changes go through a pull request.

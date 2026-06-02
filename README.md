@@ -38,12 +38,12 @@ Required secrets:
 | `VITE_SUPABASE_URL`            | Supabase project settings     |
 | `VITE_SUPABASE_ANON_KEY`       | Supabase API settings         |
 | `SUPABASE_SERVICE_ROLE_KEY`    | Supabase Service Role (secret)|
-| `VITE_STRIPE_PUBLISHABLE_KEY`  | Stripe Developers dashboard   |
-| `STRIPE_SECRET_KEY`            | Stripe Secret Key (test mode) |
-| `STRIPE_WEBHOOK_SECRET`        | Stripe CLI / Dashboard        |
-| `NEXT_PUBLIC_STRIPE_PRICE_ID`  | Stripe Price ID (test mode)   |
+| `VITE_STRIPE_PUBLISHABLE_KEY`  | Stripe Publishable Key (`pk_live_...`) |
+| `STRIPE_SECRET_KEY`            | Stripe Secret Key (`sk_live_...`)       |
+| `STRIPE_WEBHOOK_SECRET`        | Stripe webhook signing secret           |
+| `NEXT_PUBLIC_STRIPE_PRICE_ID`  | Stripe Price ID for your subscription   |
 
-> **Never commit `.env` to version control.** All keys are TEST keys in development.
+> **Never commit `.env` to version control.**
 
 ### 3. Database
 
@@ -108,12 +108,12 @@ npx netlify dev      # Netlify dev server (functions on :8888)
 npm test
 ```
 
-Runs Vitest on the serverless functions. Webhook tests cover signature verification, event handling, and idempotency.
+Runs Vitest on the serverless functions.
 
 ## Manual Setup Checklist
 
-- [ ] Fill in `.env` with real Supabase + Stripe test keys
+- [ ] Fill in `.env` with your production Supabase + Stripe keys
 - [ ] Run `supabase/migrations/0001_init.sql` in Supabase SQL editor
-- [ ] Set Stripe webhook secret (`STRIPE_WEBHOOK_SECRET`) after running `stripe listen`
+- [ ] Set Stripe webhook secret (`STRIPE_WEBHOOK_SECRET`) from Stripe dashboard
 - [ ] Configure Stripe webhook endpoint to point at `/.netlify/functions/stripe-webhook`
 - [ ] Deploy via Netlify (CI/CD from GitHub)

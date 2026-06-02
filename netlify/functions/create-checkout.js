@@ -15,10 +15,6 @@ export async function handler(event) {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  if (!process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_')) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Stripe not configured in test mode' }) };
-  }
-
   try {
     const { price_id, user_id, success_url, cancel_url } = JSON.parse(event.body);
 
