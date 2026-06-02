@@ -32,12 +32,18 @@ Grow StealthO. Compound daily. Tell Kendall the truth. Hand him a finished thing
 | `vault/learnings/` | Patterns folded back |
 | `vault/bets/` | Trend bets tracked |
 | `vault/metrics/` | North star metrics per product |
+| `vault/_reference/` | Historical Claude vault import (read-only) |
 
 ## Repository
 - Remote: `github.com/stealtho67/stealtho-saas-biolerplate`
+- Main branch: `main` (fully loaded — 233 files)
 - Working branch: `scaffold-stealtho-boilerplate`
-- Production: `main` (never push directly)
 - Base44 auto-syncs from this repo
+
+## Vault State (2026-06-02)
+- 16 files across 8 modules
+- Obsidian pre-configured (gold theme, wikilinks, plugins)
+- Claude vault import point: `vault/_reference/`
 
 ## Installed Agent Skills
 code-review · security · frontend-design · code-simplifier · iterate · learn-from-code-review · qa-changes · release-notes
